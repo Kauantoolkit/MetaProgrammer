@@ -1,0 +1,61 @@
+[
+  {
+    "id": "mhux7jef-xgbx56",
+    "name": "userinfo",
+    "attributes": [
+      {
+        "name": "atributo_teste",
+        "type": "string"
+      }
+    ],
+    "relations": []
+  },
+  {
+    "id": "mhux7axi-wp8twu",
+    "name": "Usuario",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "nome",
+        "type": "string"
+      },
+      {
+        "name": "email",
+        "type": "string"
+      }
+    ],
+    "relations": [
+      {
+        "target": "Post",
+        "type": "1:N"
+      }
+    ]
+  },
+  {
+    "id": "mhux7axi-9z3hcj",
+    "name": "Post",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "titulo",
+        "type": "string"
+      },
+      {
+        "name": "conteudo",
+        "type": "string"
+      }
+    ],
+    "relations": [
+      {
+        "target": "Usuario",
+        "type": "N:1"
+      }
+    ]
+  }
+]
