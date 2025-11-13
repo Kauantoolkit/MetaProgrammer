@@ -1,64 +1,62 @@
 [
   {
-    "name": "User",
+    "name": "Medico",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "username", "type": "string" },
-      { "name": "email", "type": "string" },
-      { "name": "password", "type": "string" },
-      { "name": "active", "type": "boolean" }
+      { "name": "nome", "type": "string" },
+      { "name": "crm", "type": "string" },
+      { "name": "especialidade", "type": "string" }
     ],
     "relations": [
-      { "target": "Post", "type": "1:N" },
-      { "target": "Role", "type": "N:N" }
+      { "target": "Sala", "type": "1:N" },
+      { "target": "Consulta", "type": "1:N" }
     ]
   },
   {
-    "name": "Post",
+    "name": "Sala",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "title", "type": "string" },
-      { "name": "content", "type": "string" },
-      { "name": "createdAt", "type": "string" }
+      { "name": "numero", "type": "string" },
+      { "name": "andar", "type": "string" },
+      { "name": "tipo", "type": "string" }
     ],
     "relations": [
-      { "target": "User", "type": "N:1" },
-      { "target": "Comment", "type": "1:N" },
-      { "target": "Category", "type": "N:N" }
+      { "target": "Medico", "type": "N:1" }
     ]
   },
   {
-    "name": "Comment",
+    "name": "Paciente",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "text", "type": "string" },
-      { "name": "createdAt", "type": "string" }
+      { "name": "nome", "type": "string" },
+      { "name": "cpf", "type": "string" },
+      { "name": "dataNascimento", "type": "string" }
     ],
     "relations": [
-      { "target": "User", "type": "N:1" },
-      { "target": "Post", "type": "N:1" }
+      { "target": "Consulta", "type": "1:N" }
     ]
   },
   {
-    "name": "Category",
+    "name": "Consulta",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "name", "type": "string" },
-      { "name": "description", "type": "string" }
+      { "name": "data", "type": "string" },
+      { "name": "hora", "type": "string" },
+      { "name": "diagnostico", "type": "string" }
     ],
     "relations": [
-      { "target": "Post", "type": "N:N" }
+      { "target": "Medico", "type": "N:1" },
+      { "target": "Paciente", "type": "N:1" }
     ]
   },
   {
-    "name": "Role",
+    "name": "Funcionario",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "name", "type": "string" },
-      { "name": "description", "type": "string" }
+      { "name": "nome", "type": "string" },
+      { "name": "cargo", "type": "string" },
+      { "name": "salario", "type": "number" }
     ],
-    "relations": [
-      { "target": "User", "type": "N:N" }
-    ]
+    "relations": []
   }
 ]
