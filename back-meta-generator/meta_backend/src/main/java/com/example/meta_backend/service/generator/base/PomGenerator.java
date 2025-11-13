@@ -59,6 +59,12 @@ public class PomGenerator {
                         <artifactId>spring-boot-starter-validation</artifactId>
                     </dependency>
 
+                    <!-- Thymeleaf -->
+                    <dependency>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                    </dependency>
+
                     <!-- Spring Security -->
                     <dependency>
                         <groupId>org.springframework.boot</groupId>

@@ -12,7 +12,7 @@ public class ApplicationPropertiesGenerator {
 
         String props = """
             spring.application.name=%s
-            server.port=8080
+            server.port=8081
             spring.datasource.url=jdbc:h2:mem:%sdb
             spring.datasource.driverClassName=org.h2.Driver
             spring.datasource.username=sa

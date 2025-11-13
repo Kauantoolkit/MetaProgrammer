@@ -28,19 +28,21 @@ public class CodeGeneratorService {
     private final SecurityGenerator securityGenerator = new SecurityGenerator();
     private final GlobalExceptionHandlerGenerator exceptionHandlerGenerator = new GlobalExceptionHandlerGenerator();
 
+    private final ThymeleafFrontGenerator thymeleafGenerator = new ThymeleafFrontGenerator();
+
     private static final String PROJECT_NAME = "generated_app";
     private static final String BASE_DIR = PROJECT_NAME + "/src/main/java/com/metagen/backend/generated/";
 
     public void generateEntities(List<Map<String, Object>> entities) {
         try {
             // Cria a estrutura base do projeto
-            baseStructureGenerator.createBaseStructure(); // sem argumentos
+            baseStructureGenerator.createBaseStructure();
 
             // Gera arquivos fundamentais do projeto
-            pomGenerator.generatePom(PROJECT_NAME); // apenas projectName
-            mainClassGenerator.generateMainClass(PROJECT_NAME); // apenas projectName
-            gitignoreGenerator.generateGitignore(); // sem argumentos
-            appPropsGenerator.generateApplicationProperties(PROJECT_NAME); // apenas projectName
+            pomGenerator.generatePom(PROJECT_NAME);
+            mainClassGenerator.generateMainClass(PROJECT_NAME);
+            gitignoreGenerator.generateGitignore();
+            appPropsGenerator.generateApplicationProperties(PROJECT_NAME);
 
             // Gera entidades e camadas associadas
             for (Map<String, Object> entity : entities) {
@@ -58,6 +60,13 @@ public class CodeGeneratorService {
             // Gera camadas adicionais
             securityGenerator.generateSecurityClasses(BASE_DIR);
             exceptionHandlerGenerator.generateGlobalExceptionHandler(BASE_DIR);
+
+            // Gera front-end Thymeleaf
+            thymeleafGenerator.generateTemplates(entities);
+
+            // Gera controller do backoffice
+            BackofficeControllerGenerator backofficeControllerGenerator = new BackofficeControllerGenerator();
+            backofficeControllerGenerator.generateBackofficeController(entities);
 
         } catch (IOException e) {
             throw new RuntimeException("Erro ao gerar backend: " + e.getMessage(), e);
