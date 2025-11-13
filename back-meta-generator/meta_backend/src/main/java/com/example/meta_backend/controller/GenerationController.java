@@ -1,14 +1,19 @@
 package com.example.meta_backend.controller;
 
-import com.example.meta_backend.service.CodeGeneratorService;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.meta_backend.service.CodeGeneratorService;
+
 @RestController
 @RequestMapping("/generate")
+@CrossOrigin(origins = "http://localhost:5173") 
 public class GenerationController {
 
     private final CodeGeneratorService generatorService;

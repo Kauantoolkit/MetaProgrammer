@@ -1,25 +1,28 @@
 [
   {
+    "id": "ent-user",
     "name": "User",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "username", "type": "string" },
+      { "name": "name", "type": "string" },
       { "name": "email", "type": "string" },
       { "name": "password", "type": "string" },
-      { "name": "active", "type": "boolean" }
+      { "name": "createdAt", "type": "date" }
     ],
     "relations": [
       { "target": "Post", "type": "1:N" },
-      { "target": "Role", "type": "N:N" }
+      { "target": "Comment", "type": "1:N" }
     ]
   },
   {
+    "id": "ent-post",
     "name": "Post",
     "attributes": [
       { "name": "id", "type": "number" },
       { "name": "title", "type": "string" },
       { "name": "content", "type": "string" },
-      { "name": "createdAt", "type": "string" }
+      { "name": "published", "type": "boolean" },
+      { "name": "createdAt", "type": "date" }
     ],
     "relations": [
       { "target": "User", "type": "N:1" },
@@ -28,11 +31,12 @@
     ]
   },
   {
+    "id": "ent-comment",
     "name": "Comment",
     "attributes": [
       { "name": "id", "type": "number" },
-      { "name": "text", "type": "string" },
-      { "name": "createdAt", "type": "string" }
+      { "name": "content", "type": "string" },
+      { "name": "createdAt", "type": "date" }
     ],
     "relations": [
       { "target": "User", "type": "N:1" },
@@ -40,6 +44,7 @@
     ]
   },
   {
+    "id": "ent-category",
     "name": "Category",
     "attributes": [
       { "name": "id", "type": "number" },
@@ -48,17 +53,6 @@
     ],
     "relations": [
       { "target": "Post", "type": "N:N" }
-    ]
-  },
-  {
-    "name": "Role",
-    "attributes": [
-      { "name": "id", "type": "number" },
-      { "name": "name", "type": "string" },
-      { "name": "description", "type": "string" }
-    ],
-    "relations": [
-      { "target": "User", "type": "N:N" }
     ]
   }
 ]

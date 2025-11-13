@@ -155,6 +155,26 @@ export default function EntityManager() {
     newCounter.current = Math.max(newCounter.current, maxIndex + 1);
   };
 
+  const gerarBackend = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entities),
+    });
+
+    if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+
+    const text = await response.text();
+    alert("✅ Backend gerado com sucesso!\n\n" + text);
+  } catch (err) {
+    console.error(err);
+    alert("❌ Falha ao gerar backend: " + err.message);
+  }
+};
+
+
+
   const filteredEntities = entities.filter((e) => e.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
@@ -223,8 +243,19 @@ export default function EntityManager() {
         <Card className="h-full bg-[#0f1720] border border-gray-800">
           <CardContent className="flex flex-col h-full overflow-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Visão geral</h2>
-              <div className="text-sm text-gray-400">{entities.length} entidades</div>
+  <div className="flex items-center gap-3">
+    <h2 className="text-2xl font-bold">Visão geral</h2>
+    <div className="text-sm text-gray-400">{entities.length} entidades</div>
+  </div>
+  <Button
+    onClick={gerarBackend}
+    className="bg-emerald-700 hover:bg-emerald-600"
+  >
+    🚀 Gerar Backend
+  </Button>
+</div>
+
+            <div className="mb-4">
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
