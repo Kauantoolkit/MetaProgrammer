@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "back-meta-generator"
+		},
+		{
+			"path": "front-meta-generator"
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "interactive",
+		"java.project.sourcePaths": [
+			"back-meta-generator/generated_app"
+		],
+		"java.compile.nullAnalysis.mode": "automatic"
+	}
+}
