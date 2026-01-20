@@ -19,20 +19,30 @@ public class BackofficeControllerGenerator {
           .append("import org.springframework.web.bind.annotation.GetMapping;\n\n")
           .append("@Controller\n")
           .append("public class BackofficeController {\n\n")
+          .append("    @GetMapping(\"/login\")\n")
+          .append("    public String login() {\n")
+          .append("        return \"backoffice/login\";\n")
+          .append("    }\n\n")
           .append("    @GetMapping(\"/backoffice\")\n")
           .append("    public String backofficeHome(Model model) {\n")
           .append("        return \"backoffice/index\";\n")
           .append("    }\n\n");
 
         for (Map<String, Object> entity : entities) {
-            String name = (String) entity.get("name");
-            sb.append(String.format(
-                "    @GetMapping(\"/%s/list\")\n" +
-                "    public String list%s(Model model) {\n" +
-                "        return \"%s/list\";\n" +
-                "    }\n\n",
-                name.toLowerCase(), name, name.toLowerCase()
-            ));
+            Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+            List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+
+            // Only generate backoffice routes if endpoints are configured
+            if (!endpoints.isEmpty()) {
+                String name = (String) entity.get("name");
+                sb.append(String.format(
+                    "    @GetMapping(\"/%s/list\")\n" +
+                    "    public String list%s(Model model) {\n" +
+                    "        return \"%s/list\";\n" +
+                    "    }\n\n",
+                    name.toLowerCase(), name, name.toLowerCase()
+                ));
+            }
         }
 
         sb.append("}\n");

@@ -71,11 +71,23 @@ public class PomGenerator {
                         <artifactId>spring-boot-starter-security</artifactId>
                     </dependency>
 
-                    <!-- H2 Database -->
+                    <!-- PostgreSQL Database -->
                     <dependency>
-                        <groupId>com.h2database</groupId>
-                        <artifactId>h2</artifactId>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
                         <scope>runtime</scope>
+                    </dependency>
+
+                    <!-- Flyway for database migrations -->
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-core</artifactId>
+                    </dependency>
+
+                    <!-- Flyway PostgreSQL support -->
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
                     </dependency>
 
                     <!-- Testes -->

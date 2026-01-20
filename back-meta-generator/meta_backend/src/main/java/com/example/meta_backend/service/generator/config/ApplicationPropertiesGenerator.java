@@ -19,6 +19,8 @@ public class ApplicationPropertiesGenerator {
             spring.datasource.password=
             spring.jpa.hibernate.ddl-auto=update
             spring.h2.console.enabled=true
+            server.error.include-message=always
+            server.error.include-stacktrace=never
             """.formatted(projectName, projectName.toLowerCase());
 
         Files.writeString(Paths.get(BASE_DIR + "application.properties"), props);

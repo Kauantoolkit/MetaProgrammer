@@ -1,0 +1,8 @@
+- [x] Modify PomGenerator to add PostgreSQL and Flyway dependencies, remove H2
+- [x] Modify ApplicationPropertiesGenerator to use PostgreSQL and Flyway
+- [x] Modify EntityGenerator to always generate a User entity with username, password, roles
+- [x] Modify RepositoryGenerator to generate UserRepository with findByUsername
+- [x] Modify SecurityGenerator to add UserDetailsService that uses UserRepository, and password encoder
+- [x] Update CodeGeneratorService to always generate User entity and repository
+- [x] Add Flyway migration for User table
+- [ ] Test the build

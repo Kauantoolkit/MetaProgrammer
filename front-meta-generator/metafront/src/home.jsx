@@ -1,15 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EntityList from './components/schema-builder/EntityList';
 import EntityEditor from './components/schema-builder/EntityEditor';
 import JsonPreview from './components/schema-builder/JsonPreview';
 import RelationDiagram from './components/schema-builder/RelationDiagram';
 
-const initialEntities = [];
+const STORAGE_KEY = 'schema_builder_entities_v1';
+const SELECTED_ENTITY_KEY = 'schema_builder_selected_entity_v1';
+const RIGHT_PANEL_KEY = 'schema_builder_right_panel_v1';
+const storage = (() => {
+  try {
+    const test = '__storage_test__';
+    sessionStorage.setItem(test, test);
+    sessionStorage.removeItem(test);
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+})();
+
+const loadEntities = () => {
+  if (!storage) return [];
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map(entity => ({
+          name: entity.name,
+          attributes: (entity.attributes || []).map(attr => ({
+            name: attr.name,
+            type: attr.type,
+            constraints: attr.constraints || [],
+            values: attr.values,
+            default: attr.default
+          })),
+          relations: (entity.relations || []).map(rel => ({
+            target: rel.target,
+            type: rel.type,
+            required: rel.required || false,
+            cascade: rel.cascade || "restrict"
+          })),
+          behaviors: entity.behaviors || [],
+          api: entity.api || { endpoints: [], auth: "required", roles: ["admin"] }
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("Erro ao ler storage:", err);
+  }
+  return [];
+};
 
 export default function Home() {
-  const [entities, setEntities] = useState(initialEntities);
+  const [entities, setEntities] = useState(loadEntities);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [rightPanel, setRightPanel] = useState('json');
+
+  // Load selected entity and right panel on mount
+  useEffect(() => {
+    if (storage) {
+      try {
+        const selectedEntityName = storage.getItem(SELECTED_ENTITY_KEY);
+        if (selectedEntityName) {
+          const selected = entities.find(e => e.name === selectedEntityName);
+          setSelectedEntity(selected || entities[0] || null);
+        } else {
+          setSelectedEntity(entities[0] || null);
+        }
+
+        const savedRightPanel = storage.getItem(RIGHT_PANEL_KEY);
+        if (savedRightPanel && (savedRightPanel === 'json' || savedRightPanel === 'diagram')) {
+          setRightPanel(savedRightPanel);
+        }
+      } catch (err) {
+        console.warn("Erro ao ler storage para selectedEntity/rightPanel:", err);
+      }
+    }
+  }, [entities]);
+
+  // Save to storage when entities change
+  useEffect(() => {
+    if (storage) {
+      try {
+        storage.setItem(STORAGE_KEY, JSON.stringify(entities));
+      } catch (err) {
+        console.warn("Erro ao salvar storage:", err);
+      }
+    }
+  }, [entities]);
+
+  // Save selected entity to storage
+  useEffect(() => {
+    if (storage) {
+      try {
+        if (selectedEntity) {
+          storage.setItem(SELECTED_ENTITY_KEY, selectedEntity.name);
+        } else {
+          storage.removeItem(SELECTED_ENTITY_KEY);
+        }
+      } catch (err) {
+        console.warn("Erro ao salvar selectedEntity:", err);
+      }
+    }
+  }, [selectedEntity]);
+
+  // Save right panel state to storage
+  useEffect(() => {
+    if (storage) {
+      try {
+        storage.setItem(RIGHT_PANEL_KEY, rightPanel);
+      } catch (err) {
+        console.warn("Erro ao salvar rightPanel:", err);
+      }
+    }
+  }, [rightPanel]);
 
   const handleUpdateEntity = (updatedEntity) => {
     setEntities(prev => prev.map(e => e.name === updatedEntity.name ? updatedEntity : e));
@@ -119,7 +223,29 @@ export default function Home() {
           </div>
           <div className="flex-1 overflow-auto p-4">
             {rightPanel === 'json' ? (
-              <JsonPreview entities={entities} />
+              <JsonPreview entities={entities} onLoadEntities={(loadedEntities) => {
+                const normalizedEntities = loadedEntities.map(entity => ({
+                  name: entity.name,
+                  attributes: (entity.attributes || []).map(attr => ({
+                    name: attr.name,
+                    type: attr.type,
+                    constraints: attr.constraints || [],
+                    values: attr.values,
+                    default: attr.default
+                  })),
+                  relations: (entity.relations || []).map(rel => ({
+                    target: rel.target,
+                    type: rel.type,
+                    required: rel.required || false,
+                    cascade: rel.cascade || "restrict"
+                  })),
+                  behaviors: entity.behaviors || [],
+                  api: entity.api || { endpoints: [], auth: "required", roles: ["admin"] }
+                }));
+                setEntities(normalizedEntities);
+                const firstEntity = normalizedEntities[0] || null;
+                setSelectedEntity(firstEntity);
+              }} />
             ) : (
               <RelationDiagram entities={entities} onSelectEntity={setSelectedEntity} />
             )}

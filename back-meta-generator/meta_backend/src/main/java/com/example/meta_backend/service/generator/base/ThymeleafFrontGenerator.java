@@ -24,15 +24,30 @@ public class ThymeleafFrontGenerator {
         // Backoffice index
         Files.writeString(Paths.get(BASE_DIR + "backoffice/index.html"), backofficeIndexContent(entities));
 
-        // Templates por entidade
-        for (Map<String, Object> entity : entities) {
-            String name = (String) entity.get("name");
-            List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
-            Path entityDir = Paths.get(BASE_DIR + name.toLowerCase());
-            Files.createDirectories(entityDir);
+        // Backoffice login
+        Files.writeString(Paths.get(BASE_DIR + "backoffice/login.html"), loginContent());
 
-            Files.writeString(entityDir.resolve("list.html"), generateListHtml(name, attrs));
-            Files.writeString(entityDir.resolve("addEditDialog.html"), generateDialogHtml(name, attrs));
+        // Error page
+        Files.writeString(Paths.get(BASE_DIR + "error.html"), errorContent());
+
+        // Login page (static)
+        Files.createDirectories(Paths.get("generated_app/src/main/resources/static"));
+        Files.writeString(Paths.get("generated_app/src/main/resources/static/login.html"), staticLoginContent());
+
+        // Templates por entidade (apenas se CRUD estiver habilitado)
+        for (Map<String, Object> entity : entities) {
+            Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+            List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+
+            if (endpoints.contains("crud")) {
+                String name = (String) entity.get("name");
+                List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
+                Path entityDir = Paths.get(BASE_DIR + name.toLowerCase());
+                Files.createDirectories(entityDir);
+
+                Files.writeString(entityDir.resolve("list.html"), generateListHtml(name, attrs));
+                Files.writeString(entityDir.resolve("addEditDialog.html"), generateDialogHtml(name, attrs));
+            }
         }
     }
 
@@ -50,6 +65,9 @@ public class ThymeleafFrontGenerator {
                     <div class="d-flex">
                         <div th:replace="fragments/sidebar :: sidebar"></div>
                         <div class="flex-grow-1 p-3">
+                            <div class="d-flex justify-content-end mb-3">
+                                <a th:href="@{/logout}" class="btn btn-outline-danger btn-sm">Logout</a>
+                            </div>
                             <div layout:fragment="content"></div>
                         </div>
                     </div>
@@ -62,7 +80,15 @@ public class ThymeleafFrontGenerator {
                                 .then(data => {
                                     const form = document.querySelector('#addEditModal-' + entity + ' form');
                                     Object.keys(data).forEach(key => {
-                                        if(form[key]) form[key].value = data[key];
+                                        if(form[key]) {
+                                            if (data[key] === true) {
+                                                form[key].value = 'true';
+                                            } else if (data[key] === false) {
+                                                form[key].value = 'false';
+                                            } else {
+                                                form[key].value = String(data[key]);
+                                            }
+                                        }
                                     });
                                     new bootstrap.Modal(document.getElementById('addEditModal-' + entity)).show();
                                 });
@@ -77,18 +103,31 @@ public class ThymeleafFrontGenerator {
                         }
 
                         // Salvar via REST (novo ou editar)
-                        function submitForm(entity) {
-                            const form = document.querySelector('#form-' + entity);
-                            const data = Object.fromEntries(new FormData(form).entries());
+        function submitForm(entity) {
+            const form = document.querySelector('#form-' + entity);
+            const formData = new FormData(form);
+            const data = {};
 
-                            fetch('/api/' + entity, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(data)
-                            })
-                            .then(res => res.json())
-                            .then(() => location.reload());
-                        }
+            for (let [key, value] of formData.entries()) {
+                if (value === 'true') {
+                    data[key] = true;
+                } else if (value === 'false') {
+                    data[key] = false;
+                } else if (!isNaN(value) && value !== '') {
+                    data[key] = Number(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            fetch('/api/' + entity, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(() => location.reload());
+        }
                     </script>
                 </body>
                 </html>
@@ -104,18 +143,23 @@ public class ThymeleafFrontGenerator {
                 """);
 
         for (Map<String, Object> entity : entities) {
-            String name = (String) entity.get("name");
-            String icon = switch (name.toLowerCase()) {
-                case "conversiontype" -> "📊";
-                case "conversionjob" -> "⚙️";
-                case "clientusage" -> "👥";
-                default -> "📄";
-            };
-            sb.append("<li class=\"nav-item mb-2\">\n")
-              .append(String.format("<a class=\"nav-link d-flex align-items-center\" th:href=\"@{'/%s/list'}\">\n", name.toLowerCase()))
-              .append(String.format("<span>%s</span> %s\n", icon, name))
-              .append("</a>\n")
-              .append("</li>\n");
+            Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+            List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+
+            if (endpoints.contains("crud")) {
+                String name = (String) entity.get("name");
+                String icon = switch (name.toLowerCase()) {
+                    case "conversiontype" -> "📊";
+                    case "conversionjob" -> "⚙️";
+                    case "clientusage" -> "👥";
+                    default -> "📄";
+                };
+                sb.append("<li class=\"nav-item mb-2\">\n")
+                  .append(String.format("<a class=\"nav-link d-flex align-items-center\" th:href=\"@{'/%s/list'}\">\n", name.toLowerCase()))
+                  .append(String.format("<span>%s</span> %s\n", icon, name))
+                  .append("</a>\n")
+                  .append("</li>\n");
+            }
         }
 
         sb.append("""
@@ -140,8 +184,13 @@ public class ThymeleafFrontGenerator {
                 """);
 
         for (Map<String, Object> entity : entities) {
-            String name = (String) entity.get("name");
-            sb.append(String.format("<li><a th:href=\"@{'/%s/list'}\">%s</a></li>\n", name.toLowerCase(), name));
+            Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+            List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+
+            if (endpoints.contains("crud")) {
+                String name = (String) entity.get("name");
+                sb.append(String.format("<li><a th:href=\"@{'/%s/list'}\">%s</a></li>\n", name.toLowerCase(), name));
+            }
         }
 
         sb.append("""
@@ -362,4 +411,205 @@ public class ThymeleafFrontGenerator {
 
         return sb.toString();
     }
-}
+
+    private String loginContent() {
+        return """
+                <!DOCTYPE html>
+                <html xmlns:th="http://www.thymeleaf.org">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Admin Login</title>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+                    <style>
+                        body {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            min-height: 100vh;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        .login-container {
+                            background: rgba(255, 255, 255, 0.95);
+                            border-radius: 15px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 400px;
+                            backdrop-filter: blur(10px);
+                        }
+                        .btn-login {
+                            background: linear-gradient(45deg, #667eea, #764ba2);
+                            border: none;
+                            border-radius: 25px;
+                            padding: 12px 30px;
+                            font-weight: 600;
+                            width: 100%;
+                            transition: all 0.3s ease;
+                        }
+                        .btn-login:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+                        }
+                        .form-control:focus {
+                            border-color: #667eea;
+                            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="login-container">
+                        <h2 class="text-center mb-4">Admin Login</h2>
+                        <form th:action="@{/login}" method="post">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-login">Login</button>
+                        </form>
+                        <div th:if="${param.error}" class="alert alert-danger mt-3">
+                            Invalid username or password.
+                        </div>
+                        <div th:if="${param.logout}" class="alert alert-success mt-3">
+                            You have been logged out successfully.
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """;
+    }
+
+    private String staticLoginContent() {
+        return """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Admin Login</title>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+                    <style>
+                        body {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            min-height: 100vh;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        .login-container {
+                            background: rgba(255, 255, 255, 0.95);
+                            border-radius: 15px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 400px;
+                            backdrop-filter: blur(10px);
+                        }
+                        .btn-login {
+                            background: linear-gradient(45deg, #667eea, #764ba2);
+                            border: none;
+                            border-radius: 25px;
+                            padding: 12px 30px;
+                            font-weight: 600;
+                            width: 100%;
+                            transition: all 0.3s ease;
+                        }
+                        .btn-login:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+                        }
+                        .form-control:focus {
+                            border-color: #667eea;
+                            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="login-container">
+                        <h2 class="text-center mb-4">Admin Login</h2>
+                        <form action="/login" method="post">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-login">Login</button>
+                        </form>
+                    </div>
+                </body>
+                </html>
+                """;
+    }
+
+    private String errorContent() {
+        return """
+                <!DOCTYPE html>
+                <html xmlns:th="http://www.thymeleaf.org">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Error</title>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+                    <style>
+                        body {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            min-height: 100vh;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        }
+                        .error-container {
+                            background: rgba(255, 255, 255, 0.95);
+                            border-radius: 15px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 600px;
+                            backdrop-filter: blur(10px);
+                            text-align: center;
+                        }
+                        .error-code {
+                            font-size: 4rem;
+                            font-weight: bold;
+                            color: #667eea;
+                            margin-bottom: 20px;
+                        }
+                        .error-message {
+                            font-size: 1.2rem;
+                            color: #333;
+                            margin-bottom: 30px;
+                        }
+                        .btn-home {
+                            background: linear-gradient(45deg, #667eea, #764ba2);
+                            border: none;
+                            border-radius: 25px;
+                            padding: 12px 30px;
+                            font-weight: 600;
+                            color: white;
+                            text-decoration: none;
+                            transition: all 0.3s ease;
+                        }
+                        .btn-home:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+                            color: white;
+                            text-decoration: none;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <div class="error-code" th:text="${status}">Error</div>
+                        <h2 th:text="${error}">Something went wrong</h2>
+                        <div class="error-message" th:text="${message}">An unexpected error occurred.</div>
+                        <a href="/" class="btn-home">Go to Home</a>
+                    </div>
+                </body>
+                </html>
+                """;
+    }}

@@ -44,17 +44,28 @@ public class CodeGeneratorService {
             gitignoreGenerator.generateGitignore();
             appPropsGenerator.generateApplicationProperties(PROJECT_NAME);
 
+            // Sempre gera entidade User para autenticação
+            entityGenerator.generateUserEntity(BASE_DIR);
+            repositoryGenerator.generateUserRepository(BASE_DIR);
+
             // Gera entidades e camadas associadas
             for (Map<String, Object> entity : entities) {
                 String name = (String) entity.get("name");
                 List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
                 List<Map<String, Object>> rels = (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
 
+                // Sempre gera entidade, repositório, DTO e serviço
                 entityGenerator.generateEntity(BASE_DIR, name, attrs, rels);
                 repositoryGenerator.generateRepository(BASE_DIR, name);
                 dtoGenerator.generateDTOs(BASE_DIR, name, attrs);
-                serviceGenerator.generateService(BASE_DIR, name);
-                controllerGenerator.generateController(BASE_DIR, name, attrs);
+                serviceGenerator.generateService(BASE_DIR, name, entity);
+
+                // Gera controller apenas se houver endpoints configurados
+                Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+                List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+                if (!endpoints.isEmpty()) {
+                    controllerGenerator.generateController(BASE_DIR, name, attrs, entity);
+                }
             }
 
             // Gera camadas adicionais

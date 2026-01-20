@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Check, Download, Minimize2, Maximize2, Rocket } from 'lucide-react';
+import { Copy, Check, Download, Minimize2, Maximize2, Rocket, Upload } from 'lucide-react';
 import { toast } from "sonner";
 
-export default function JsonPreview({ entities }) {
+export default function JsonPreview({ entities, onLoadEntities }) {
   const [copied, setCopied] = useState(false);
   const [showSimplified, setShowSimplified] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [pastedJson, setPastedJson] = useState('');
 
   // Generate simplified JSON (like original format)
   const simplifiedJson = entities.map(e => ({
@@ -92,7 +94,7 @@ export default function JsonPreview({ entities }) {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       {/* Header */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -116,6 +118,14 @@ export default function JsonPreview({ entities }) {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLoadModal(true)}
+            className="text-blue-400 hover:text-blue-300"
+          >
+            <Upload className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -146,11 +156,60 @@ export default function JsonPreview({ entities }) {
       {/* JSON Content */}
       <ScrollArea className="flex-1">
         <pre className="p-4 text-xs leading-relaxed">
-          <code 
+          <code
             dangerouslySetInnerHTML={{ __html: highlightJson(jsonString) }}
           />
         </pre>
       </ScrollArea>
+
+      {/* Load Modal */}
+      {showLoadModal && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
+          <div className="bg-slate-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <h3 className="text-lg font-semibold mb-4">Load from JSON</h3>
+            <textarea
+              value={pastedJson}
+              onChange={(e) => setPastedJson(e.target.value)}
+              placeholder="Paste your JSON here..."
+              className="w-full h-64 p-3 bg-slate-900 border border-slate-600 rounded text-sm font-mono text-slate-200 resize-none"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowLoadModal(false);
+                  setPastedJson('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log('Load JSON clicked, pastedJson:', pastedJson);
+                  try {
+                    const parsed = JSON.parse(pastedJson);
+                    console.log('Parsed JSON:', parsed);
+                    if (Array.isArray(parsed)) {
+                      onLoadEntities(parsed);
+                      setShowLoadModal(false);
+                      setPastedJson('');
+                      toast.success('Entities loaded successfully!');
+                    } else {
+                      toast.error('Invalid JSON: must be an array of entities');
+                    }
+                  } catch (err) {
+                    console.error('JSON parse error:', err);
+                    toast.error('Invalid JSON: ' + err.message);
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-500"
+              >
+                Load JSON
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Stats */}
       <div className="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">

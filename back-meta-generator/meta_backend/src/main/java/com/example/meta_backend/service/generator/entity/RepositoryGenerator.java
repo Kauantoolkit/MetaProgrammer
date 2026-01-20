@@ -19,4 +19,21 @@ public class RepositoryGenerator {
         Files.createDirectories(Paths.get(baseDir + "repository/"));
         Files.writeString(Paths.get(baseDir + "repository/" + entityName + "Repository.java"), code);
     }
+
+    public void generateUserRepository(String baseDir) throws IOException {
+        String code = """
+            package com.metagen.backend.generated.repository;
+
+            import com.metagen.backend.generated.entity.User;
+            import org.springframework.data.jpa.repository.JpaRepository;
+            import java.util.Optional;
+
+            public interface UserRepository extends JpaRepository<User, Long> {
+                Optional<User> findByUsername(String username);
+            }
+            """;
+
+        Files.createDirectories(Paths.get(baseDir + "repository/"));
+        Files.writeString(Paths.get(baseDir + "repository/UserRepository.java"), code);
+    }
 }
