@@ -39,16 +39,19 @@ public class ThymeleafFrontGenerator {
     private String baseLayoutContent() {
         return """
                 <!DOCTYPE html>
-                <html xmlns:th="http://www.thymeleaf.org">
+                <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
                 <head>
                     <meta charset="UTF-8">
                     <title>Generated App</title>
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+                    <link rel="stylesheet" href="/css/style.css"/>
                 </head>
                 <body>
                     <div class="d-flex">
                         <div th:replace="fragments/sidebar :: sidebar"></div>
-                        <div class="flex-grow-1 p-3" th:insert="~{::content}"></div>
+                        <div class="flex-grow-1 p-3">
+                            <div layout:fragment="content"></div>
+                        </div>
                     </div>
                     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                     <script>
@@ -95,19 +98,23 @@ public class ThymeleafFrontGenerator {
     private String sidebarContent(List<Map<String, Object>> entities) {
         StringBuilder sb = new StringBuilder();
         sb.append("""
-                <div th:fragment="sidebar" class="bg-light p-3" style="width:200px; height:100vh;">
-                    <h5>Menu</h5>
+                <div th:fragment="sidebar" class="sidebar">
+                    <h5>Entidades</h5>
                     <ul class="nav flex-column">
                 """);
 
-        sb.append("<li class=\"nav-item\">\n")
-          .append("<a class=\"nav-link\" th:href=\"@{'/backoffice'}\">Backoffice</a>\n")
-          .append("</li>\n");
-
         for (Map<String, Object> entity : entities) {
             String name = (String) entity.get("name");
-            sb.append("<li class=\"nav-item\">\n")
-              .append(String.format("<a class=\"nav-link\" th:href=\"@{'/%s/list'}\">%s</a>\n", name.toLowerCase(), name))
+            String icon = switch (name.toLowerCase()) {
+                case "conversiontype" -> "📊";
+                case "conversionjob" -> "⚙️";
+                case "clientusage" -> "👥";
+                default -> "📄";
+            };
+            sb.append("<li class=\"nav-item mb-2\">\n")
+              .append(String.format("<a class=\"nav-link d-flex align-items-center\" th:href=\"@{'/%s/list'}\">\n", name.toLowerCase()))
+              .append(String.format("<span>%s</span> %s\n", icon, name))
+              .append("</a>\n")
               .append("</li>\n");
         }
 
@@ -121,9 +128,15 @@ public class ThymeleafFrontGenerator {
     private String backofficeIndexContent(List<Map<String, Object>> entities) {
         StringBuilder sb = new StringBuilder();
         sb.append("""
-                <div th:fragment="content" class="container">
-                    <h2>Painel do Backoffice</h2>
-                    <ul>
+                <!DOCTYPE html>
+                <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/base}">
+                <head>
+                    <title>Backoffice</title>
+                </head>
+                <body>
+                    <div layout:fragment="content" class="dashboard-container">
+                        <h2>Painel do Backoffice</h2>
+                        <ul>
                 """);
 
         for (Map<String, Object> entity : entities) {
@@ -132,8 +145,10 @@ public class ThymeleafFrontGenerator {
         }
 
         sb.append("""
-                    </ul>
-                </div>
+                        </ul>
+                    </div>
+                </body>
+                </html>
                 """);
         return sb.toString();
     }
@@ -142,7 +157,88 @@ public class ThymeleafFrontGenerator {
         StringBuilder sb = new StringBuilder();
         String entityPath = entityName.toLowerCase();
 
-        sb.append("<div th:fragment=\"content\" class=\"container\">\n")
+        sb.append("<!DOCTYPE html>\n")
+          .append("<html xmlns:th=\"http://www.thymeleaf.org\">\n")
+          .append("<head>\n")
+          .append("<meta charset=\"UTF-8\">\n")
+          .append(String.format("<title>%s List</title>\n", entityName))
+          .append("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\"/>\n")
+          .append("<style>\n")
+          .append("body {\n")
+          .append("    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n")
+          .append("    min-height: 100vh;\n")
+          .append("    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n")
+          .append("}\n")
+          .append(".sidebar {\n")
+          .append("    background: rgba(255, 255, 255, 0.95);\n")
+          .append("    backdrop-filter: blur(10px);\n")
+          .append("}\n")
+          .append(".content-area {\n")
+          .append("    background: rgba(255, 255, 255, 0.95);\n")
+          .append("    border-radius: 15px;\n")
+          .append("    box-shadow: 0 10px 30px rgba(0,0,0,0.3);\n")
+          .append("    margin: 20px;\n")
+          .append("    padding: 30px;\n")
+          .append("    backdrop-filter: blur(10px);\n")
+          .append("}\n")
+          .append("h2 {\n")
+          .append("    color: #333;\n")
+          .append("    font-weight: 700;\n")
+          .append("    margin-bottom: 30px;\n")
+          .append("}\n")
+          .append(".table {\n")
+          .append("    background: white;\n")
+          .append("    border-radius: 10px;\n")
+          .append("    overflow: hidden;\n")
+          .append("    box-shadow: 0 5px 15px rgba(0,0,0,0.1);\n")
+          .append("}\n")
+          .append(".table thead th {\n")
+          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
+          .append("    color: white;\n")
+          .append("    border: none;\n")
+          .append("    font-weight: 600;\n")
+          .append("}\n")
+          .append(".table tbody tr:hover {\n")
+          .append("    background: rgba(102, 126, 234, 0.1);\n")
+          .append("}\n")
+          .append(".btn-primary {\n")
+          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
+          .append("    border: none;\n")
+          .append("    border-radius: 25px;\n")
+          .append("    padding: 10px 25px;\n")
+          .append("    font-weight: 600;\n")
+          .append("    transition: all 0.3s ease;\n")
+          .append("}\n")
+          .append(".btn-primary:hover {\n")
+          .append("    transform: translateY(-2px);\n")
+          .append("    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);\n")
+          .append("}\n")
+          .append(".btn-warning {\n")
+          .append("    background: linear-gradient(45deg, #f093fb, #f5576c);\n")
+          .append("    border: none;\n")
+          .append("    border-radius: 20px;\n")
+          .append("    transition: all 0.3s ease;\n")
+          .append("}\n")
+          .append(".btn-warning:hover {\n")
+          .append("    transform: translateY(-2px);\n")
+          .append("    box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);\n")
+          .append("}\n")
+          .append(".btn-danger {\n")
+          .append("    background: linear-gradient(45deg, #ff6b6b, #ee5a24);\n")
+          .append("    border: none;\n")
+          .append("    border-radius: 20px;\n")
+          .append("    transition: all 0.3s ease;\n")
+          .append("}\n")
+          .append(".btn-danger:hover {\n")
+          .append("    transform: translateY(-2px);\n")
+          .append("    box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);\n")
+          .append("}\n")
+          .append("</style>\n")
+          .append("</head>\n")
+          .append("<body>\n")
+          .append("<div class=\"d-flex\">\n")
+          .append("<div th:replace=\"fragments/sidebar :: sidebar\"></div>\n")
+          .append("<div class=\"content-area\">\n")
           .append(String.format("<h2>Lista de %s</h2>\n", entityName))
           .append(String.format("<button class=\"btn btn-primary mb-3\" data-bs-toggle=\"modal\" data-bs-target=\"#addEditModal-%s\">Adicionar</button>\n", entityPath))
           .append("<table class=\"table table-bordered\">\n<thead>\n<tr>\n");
@@ -166,6 +262,47 @@ public class ThymeleafFrontGenerator {
     </table>
     </div>
     <div th:insert="~{%s/addEditDialog :: modal}"></div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Função para abrir modal e preencher campos via REST
+        function openEditModal(entity, id) {
+            fetch('/api/' + entity + '/' + id)
+                .then(res => res.json())
+                .then(data => {
+                    const form = document.querySelector('#addEditModal-' + entity + ' form');
+                    Object.keys(data).forEach(key => {
+                        if(form[key]) form[key].value = data[key];
+                    });
+                    new bootstrap.Modal(document.getElementById('addEditModal-' + entity)).show();
+                });
+        }
+
+        // Deletar item via REST
+        function deleteItem(entity, id) {
+            if(confirm('Deseja realmente deletar este registro?')) {
+                fetch('/api/' + entity + '/' + id, { method: 'DELETE' })
+                    .then(() => location.reload());
+            }
+        }
+
+        // Salvar via REST (novo ou editar)
+        function submitForm(entity) {
+            const form = document.querySelector('#form-' + entity);
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            fetch('/api/' + entity, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(() => location.reload());
+        }
+    </script>
+    </body>
+    </html>
     """, entityPath, entityPath, entityPath));
 
         return sb.toString();
@@ -199,10 +336,11 @@ public class ThymeleafFrontGenerator {
             if (isRelation) {
                 String relEntity = (String) attr.get("relationEntity");
                 sb.append(String.format("<select class=\"form-select\" name=\"%s\">\n<option th:each=\"e : ${%sList}\" th:value=\"${e.id}\" th:text=\"${e}\"></option>\n</select>\n", attrName, relEntity.toLowerCase()));
+            } else if (type.equalsIgnoreCase("boolean")) {
+                sb.append(String.format("<select class=\"form-select\" name=\"%s\">\n<option value=\"true\">Sim</option>\n<option value=\"false\">Não</option>\n</select>\n", attrName));
             } else {
                 String inputType = switch (type.toLowerCase()) {
                     case "number" -> "number";
-                    case "boolean" -> "checkbox";
                     case "date" -> "date";
                     default -> "text";
                 };

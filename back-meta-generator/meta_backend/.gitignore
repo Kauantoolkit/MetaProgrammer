@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+**/*.generated
+
+/generated_app/

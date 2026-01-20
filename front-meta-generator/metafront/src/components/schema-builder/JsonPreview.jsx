@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Check, Download, Minimize2, Maximize2 } from 'lucide-react';
+import { Copy, Check, Download, Minimize2, Maximize2, Rocket } from 'lucide-react';
 import { toast } from "sonner";
 
 export default function JsonPreview({ entities }) {
@@ -62,6 +62,25 @@ export default function JsonPreview({ entities }) {
     URL.revokeObjectURL(url);
   };
 
+  const generateBackend = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentJson),
+      });
+
+      if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+
+      const text = await response.text();
+      toast.success("Backend gerado com sucesso!");
+      console.log("Resposta do backend:", text);
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao gerar backend: " + err.message);
+    }
+  };
+
   // Syntax highlighting
   const highlightJson = (json) => {
     return json
@@ -97,6 +116,14 @@ export default function JsonPreview({ entities }) {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={generateBackend}
+            className="text-emerald-400 hover:text-emerald-300"
+          >
+            <Rocket className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
