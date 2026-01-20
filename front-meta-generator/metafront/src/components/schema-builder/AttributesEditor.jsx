@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import  {Button}  from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import  {Select} from "@/components/ui/select";
+import  {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
 import  Badge  from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
 import  {cn}  from "@/lib/utils";
@@ -45,6 +45,9 @@ export default function AttributesEditor({ entity, onUpdate }) {
     const newAttributes = [...entity.attributes];
     newAttributes[index] = { ...newAttributes[index], ...updates };
     onUpdate({ ...entity, attributes: newAttributes });
+    if (updates.name) {
+      setExpandedAttr(updates.name);
+    }
   };
 
   const handleDeleteAttribute = (index) => {
