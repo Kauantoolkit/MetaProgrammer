@@ -6,4 +6,5 @@
 *.iml
 *.log
 /generated_app/
+**/*.generated
 
