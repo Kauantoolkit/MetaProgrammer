@@ -144,6 +144,15 @@
           "required"
         ]
       }
-    ]
+    ],
+    "relations": [],
+    "behaviors": [],
+    "api": {
+      "endpoints": [],
+      "auth": "required",
+      "roles": [
+        "admin"
+      ]
+    }
   }
 ]

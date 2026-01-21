@@ -4,45 +4,51 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, Check, Download, Minimize2, Maximize2, Rocket, Upload } from 'lucide-react';
 import { toast } from "sonner";
 
-export default function JsonPreview({ entities, onLoadEntities }) {
+export default function JsonPreview({ entities, appName, onLoadEntities }) {
   const [copied, setCopied] = useState(false);
   const [showSimplified, setShowSimplified] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [pastedJson, setPastedJson] = useState('');
 
   // Generate simplified JSON (like original format)
-  const simplifiedJson = entities.map(e => ({
-    name: e.name,
-    attributes: e.attributes.map(a => ({
-      name: a.name,
-      type: a.type,
-      ...(a.values && { values: a.values })
-    })),
-    relations: e.relations.map(r => ({
-      target: r.target,
-      type: r.type
+  const simplifiedJson = {
+    appName,
+    entities: entities.map(e => ({
+      name: e.name,
+      attributes: e.attributes.map(a => ({
+        name: a.name,
+        type: a.type,
+        ...(a.values && { values: a.values })
+      })),
+      relations: e.relations.map(r => ({
+        target: r.target,
+        type: r.type
+      }))
     }))
-  }));
+  };
 
   // Full enriched JSON
-  const enrichedJson = entities.map(e => ({
-    name: e.name,
-    attributes: e.attributes.map(a => {
-      const attr = { name: a.name, type: a.type };
-      if (a.constraints?.length > 0) attr.constraints = a.constraints;
-      if (a.values) attr.values = a.values;
-      if (a.default !== undefined) attr.default = a.default;
-      return attr;
-    }),
-    relations: e.relations.map(r => ({
-      target: r.target,
-      type: r.type,
-      required: r.required,
-      cascade: r.cascade
-    })),
-    behaviors: e.behaviors,
-    api: e.api
-  }));
+  const enrichedJson = {
+    appName,
+    entities: entities.map(e => ({
+      name: e.name,
+      attributes: e.attributes.map(a => {
+        const attr = { name: a.name, type: a.type };
+        if (a.constraints?.length > 0) attr.constraints = a.constraints;
+        if (a.values) attr.values = a.values;
+        if (a.default !== undefined) attr.default = a.default;
+        return attr;
+      }),
+      relations: e.relations.map(r => ({
+        target: r.target,
+        type: r.type,
+        required: r.required,
+        cascade: r.cascade
+      })),
+      behaviors: e.behaviors,
+      api: e.api
+    }))
+  };
 
   const currentJson = showSimplified ? simplifiedJson : enrichedJson;
   const jsonString = JSON.stringify(currentJson, null, 2);

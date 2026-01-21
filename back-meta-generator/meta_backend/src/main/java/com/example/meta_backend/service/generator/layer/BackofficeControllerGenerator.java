@@ -9,8 +9,9 @@ public class BackofficeControllerGenerator {
 
     private static final String BASE_DIR = "generated_app/src/main/java/com/metagen/backend/generated/controller/";
 
-    public void generateBackofficeController(List<Map<String, Object>> entities) throws IOException {
-        Files.createDirectories(Paths.get(BASE_DIR));
+    public void generateBackofficeController(List<Map<String, Object>> entities, String appName) throws IOException {
+        String baseDir = appName + "/src/main/java/com/metagen/backend/generated/controller/";
+        Files.createDirectories(Paths.get(baseDir));
 
         StringBuilder sb = new StringBuilder();
         sb.append("package com.metagen.backend.generated.controller;\n\n")
@@ -47,7 +48,7 @@ public class BackofficeControllerGenerator {
 
         sb.append("}\n");
 
-        Path path = Paths.get(BASE_DIR + "BackofficeController.java");
+        Path path = Paths.get(baseDir + "BackofficeController.java");
         Files.writeString(path, sb.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 }

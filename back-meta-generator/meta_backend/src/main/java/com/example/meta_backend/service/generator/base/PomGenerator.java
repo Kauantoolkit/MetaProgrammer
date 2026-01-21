@@ -8,6 +8,7 @@ public class PomGenerator {
     private static final String BASE_DIR = "generated_app/";
 
     public void generatePom(String projectName) throws IOException {
+        String baseDir = projectName + "/";
         String pom = """
             <?xml version="1.0" encoding="UTF-8"?>
 
@@ -84,12 +85,6 @@ public class PomGenerator {
                         <artifactId>flyway-core</artifactId>
                     </dependency>
 
-                    <!-- Flyway PostgreSQL support -->
-                    <dependency>
-                        <groupId>org.flywaydb</groupId>
-                        <artifactId>flyway-database-postgresql</artifactId>
-                    </dependency>
-
                     <!-- Testes -->
                     <dependency>
                         <groupId>org.springframework.boot</groupId>
@@ -110,7 +105,7 @@ public class PomGenerator {
             </project>
             """.formatted(projectName, projectName);
 
-        Files.createDirectories(Paths.get(BASE_DIR));
-        Files.writeString(Paths.get(BASE_DIR + "pom.xml"), pom);
+        Files.createDirectories(Paths.get(baseDir));
+        Files.writeString(Paths.get(baseDir + "pom.xml"), pom);
     }
 }

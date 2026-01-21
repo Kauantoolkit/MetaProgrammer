@@ -7,32 +7,34 @@ import java.util.Map;
 
 public class ThymeleafFrontGenerator {
 
-    private static final String BASE_DIR = "generated_app/src/main/resources/templates/";
+    private String baseDir;
 
-    public void generateTemplates(List<Map<String, Object>> entities) throws IOException {
+    public void generateTemplates(List<Map<String, Object>> entities, String appName) throws IOException {
+        String baseDir = appName + "/src/main/resources/templates/";
+        String staticDir = appName + "/src/main/resources/static/";
         // Cria pastas base
-        Files.createDirectories(Paths.get(BASE_DIR + "layouts"));
-        Files.createDirectories(Paths.get(BASE_DIR + "fragments"));
-        Files.createDirectories(Paths.get(BASE_DIR + "backoffice"));
+        Files.createDirectories(Paths.get(baseDir + "layouts"));
+        Files.createDirectories(Paths.get(baseDir + "fragments"));
+        Files.createDirectories(Paths.get(baseDir + "backoffice"));
 
         // Layout base
-        Files.writeString(Paths.get(BASE_DIR + "layouts/base.html"), baseLayoutContent());
+        Files.writeString(Paths.get(baseDir + "layouts/base.html"), baseLayoutContent());
 
         // Sidebar
-        Files.writeString(Paths.get(BASE_DIR + "fragments/sidebar.html"), sidebarContent(entities));
+        Files.writeString(Paths.get(baseDir + "fragments/sidebar.html"), sidebarContent(entities));
 
         // Backoffice index
-        Files.writeString(Paths.get(BASE_DIR + "backoffice/index.html"), backofficeIndexContent(entities));
+        Files.writeString(Paths.get(baseDir + "backoffice/index.html"), backofficeIndexContent(entities));
 
         // Backoffice login
-        Files.writeString(Paths.get(BASE_DIR + "backoffice/login.html"), loginContent());
+        Files.writeString(Paths.get(baseDir + "backoffice/login.html"), loginContent());
 
         // Error page
-        Files.writeString(Paths.get(BASE_DIR + "error.html"), errorContent());
+        Files.writeString(Paths.get(baseDir + "error.html"), errorContent());
 
         // Login page (static)
-        Files.createDirectories(Paths.get("generated_app/src/main/resources/static"));
-        Files.writeString(Paths.get("generated_app/src/main/resources/static/login.html"), staticLoginContent());
+        Files.createDirectories(Paths.get(staticDir));
+        Files.writeString(Paths.get(staticDir + "login.html"), staticLoginContent());
 
         // Templates por entidade (apenas se CRUD estiver habilitado)
         for (Map<String, Object> entity : entities) {
@@ -42,7 +44,7 @@ public class ThymeleafFrontGenerator {
             if (endpoints.contains("crud")) {
                 String name = (String) entity.get("name");
                 List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
-                Path entityDir = Paths.get(BASE_DIR + name.toLowerCase());
+                Path entityDir = Paths.get(baseDir + name.toLowerCase());
                 Files.createDirectories(entityDir);
 
                 Files.writeString(entityDir.resolve("list.html"), generateListHtml(name, attrs));

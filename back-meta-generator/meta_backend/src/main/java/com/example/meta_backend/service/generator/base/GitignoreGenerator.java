@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.nio.file.*;
 
 public class GitignoreGenerator {
-    private static final String BASE_DIR = "generated_app/";
 
-    public void generateGitignore() throws IOException {
+    public void generateGitignore(String appName) throws IOException {
         String gitignore = """
             /target/
             /.idea/
@@ -16,6 +15,6 @@ public class GitignoreGenerator {
             *.iml
             *.log
             """;
-        Files.writeString(Paths.get(BASE_DIR + ".gitignore"), gitignore);
+        Files.writeString(Paths.get(appName + "/.gitignore"), gitignore);
     }
 }

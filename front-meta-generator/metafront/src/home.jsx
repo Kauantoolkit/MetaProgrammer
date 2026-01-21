@@ -7,6 +7,7 @@ import RelationDiagram from './components/schema-builder/RelationDiagram';
 const STORAGE_KEY = 'schema_builder_entities_v1';
 const SELECTED_ENTITY_KEY = 'schema_builder_selected_entity_v1';
 const RIGHT_PANEL_KEY = 'schema_builder_right_panel_v1';
+const APP_NAME_KEY = 'schema_builder_app_name_v1';
 const storage = (() => {
   try {
     const test = '__storage_test__';
@@ -55,6 +56,7 @@ export default function Home() {
   const [entities, setEntities] = useState(loadEntities);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [rightPanel, setRightPanel] = useState('json');
+  const [appName, setAppName] = useState('my-app');
 
   // Load selected entity and right panel on mount
   useEffect(() => {
@@ -115,6 +117,17 @@ export default function Home() {
     }
   }, [rightPanel]);
 
+  // Save app name to storage
+  useEffect(() => {
+    if (storage) {
+      try {
+        storage.setItem(APP_NAME_KEY, appName);
+      } catch (err) {
+        console.warn("Erro ao salvar appName:", err);
+      }
+    }
+  }, [appName]);
+
   const handleUpdateEntity = (updatedEntity) => {
     setEntities(prev => prev.map(e => e.name === updatedEntity.name ? updatedEntity : e));
     setSelectedEntity(updatedEntity);
@@ -166,9 +179,21 @@ export default function Home() {
             <p className="text-xs text-gray-400">Gerador de código determinístico</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="px-2 py-1 rounded bg-gray-700">{entities.length} entidades</span>
-          <span className="px-2 py-1 rounded bg-gray-700">{entities.reduce((acc, e) => acc + e.attributes.length, 0)} atributos</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-400">App Name:</label>
+            <input
+              type="text"
+              value={appName}
+              onChange={(e) => setAppName(e.target.value)}
+              className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+              placeholder="my-app"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="px-2 py-1 rounded bg-gray-700">{entities.length} entidades</span>
+            <span className="px-2 py-1 rounded bg-gray-700">{entities.reduce((acc, e) => acc + e.attributes.length, 0)} atributos</span>
+          </div>
         </div>
       </header>
 
@@ -223,29 +248,33 @@ export default function Home() {
           </div>
           <div className="flex-1 overflow-auto p-4">
             {rightPanel === 'json' ? (
-              <JsonPreview entities={entities} onLoadEntities={(loadedEntities) => {
-                const normalizedEntities = loadedEntities.map(entity => ({
-                  name: entity.name,
-                  attributes: (entity.attributes || []).map(attr => ({
-                    name: attr.name,
-                    type: attr.type,
-                    constraints: attr.constraints || [],
-                    values: attr.values,
-                    default: attr.default
-                  })),
-                  relations: (entity.relations || []).map(rel => ({
-                    target: rel.target,
-                    type: rel.type,
-                    required: rel.required || false,
-                    cascade: rel.cascade || "restrict"
-                  })),
-                  behaviors: entity.behaviors || [],
-                  api: entity.api || { endpoints: [], auth: "required", roles: ["admin"] }
-                }));
-                setEntities(normalizedEntities);
-                const firstEntity = normalizedEntities[0] || null;
-                setSelectedEntity(firstEntity);
-              }} />
+              <JsonPreview
+                entities={entities}
+                appName={appName}
+                onLoadEntities={(loadedEntities) => {
+                  const normalizedEntities = loadedEntities.map(entity => ({
+                    name: entity.name,
+                    attributes: (entity.attributes || []).map(attr => ({
+                      name: attr.name,
+                      type: attr.type,
+                      constraints: attr.constraints || [],
+                      values: attr.values,
+                      default: attr.default
+                    })),
+                    relations: (entity.relations || []).map(rel => ({
+                      target: rel.target,
+                      type: rel.type,
+                      required: rel.required || false,
+                      cascade: rel.cascade || "restrict"
+                    })),
+                    behaviors: entity.behaviors || [],
+                    api: entity.api || { endpoints: [], auth: "required", roles: ["admin"] }
+                  }));
+                  setEntities(normalizedEntities);
+                  const firstEntity = normalizedEntities[0] || null;
+                  setSelectedEntity(firstEntity);
+                }}
+              />
             ) : (
               <RelationDiagram entities={entities} onSelectEntity={setSelectedEntity} />
             )}

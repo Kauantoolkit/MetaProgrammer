@@ -4,25 +4,22 @@ import java.io.IOException;
 import java.nio.file.*;
 
 public class ApplicationPropertiesGenerator {
-    private static final String BASE_DIR = "generated_app/src/main/resources/";
-
-
     public void generateApplicationProperties(String projectName) throws IOException {
-        Files.createDirectories(Paths.get(BASE_DIR));
+        String baseDir = projectName + "/src/main/resources/";
+        Files.createDirectories(Paths.get(baseDir));
 
         String props = """
             spring.application.name=%s
             server.port=8081
-            spring.datasource.url=jdbc:h2:mem:%sdb
-            spring.datasource.driverClassName=org.h2.Driver
-            spring.datasource.username=sa
-            spring.datasource.password=
+            spring.datasource.url=jdbc:postgresql://localhost:5432/%sdb
+            spring.datasource.driverClassName=org.postgresql.Driver
+            spring.datasource.username=postgres
+            spring.datasource.password=postgres
             spring.jpa.hibernate.ddl-auto=update
-            spring.h2.console.enabled=true
             server.error.include-message=always
             server.error.include-stacktrace=never
             """.formatted(projectName, projectName.toLowerCase());
 
-        Files.writeString(Paths.get(BASE_DIR + "application.properties"), props);
+        Files.writeString(Paths.get(baseDir + "application.properties"), props);
     }
 }

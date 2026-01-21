@@ -6,7 +6,7 @@ import java.util.*;
 
 public class EntityGenerator {
 
-    public void generateEntity(String baseDir, String name, List<Map<String, Object>> attrs, List<Map<String, Object>> rels) throws IOException {
+    public void generateEntity(String baseDir, String name, List<Map<String, Object>> attrs, List<Map<String, Object>> rels, String appName) throws IOException {
         Path entityPath = Paths.get(baseDir + "entity/" + name + ".java");
         Files.createDirectories(entityPath.getParent());
 
@@ -25,6 +25,7 @@ public class EntityGenerator {
             if (field.equalsIgnoreCase("id")) {
                 sb.append("    @Id\n")
                   .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+                type = "Long"; // Force Long for ID with IDENTITY strategy
             } else {
                 sb.append("    @NotNull\n");
             }
@@ -66,7 +67,7 @@ public class EntityGenerator {
             import jakarta.validation.constraints.*;
 
             @Entity
-            @Table(name = "user")
+            @Table(name = "users")
             public class User {
 
                 @Id

@@ -23,8 +23,11 @@ public class GenerationController {
     }
 
    @PostMapping
-public String generate(@RequestBody List<Map<String, Object>> entities) {
-    generatorService.generateEntities(entities);
-    return "Código gerado em /generated/";
+public String generate(@RequestBody Map<String, Object> payload) {
+    String appName = (String) payload.get("appName");
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> entities = (List<Map<String, Object>>) payload.get("entities");
+    generatorService.generateEntities(appName, entities);
+    return "Código gerado em /" + appName + "/";
 }}
 

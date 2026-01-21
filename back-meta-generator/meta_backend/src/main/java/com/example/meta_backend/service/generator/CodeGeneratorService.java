@@ -33,20 +33,22 @@ public class CodeGeneratorService {
     private static final String PROJECT_NAME = "generated_app";
     private static final String BASE_DIR = PROJECT_NAME + "/src/main/java/com/metagen/backend/generated/";
 
-    public void generateEntities(List<Map<String, Object>> entities) {
+    public void generateEntities(String appName, List<Map<String, Object>> entities) {
         try {
             // Cria a estrutura base do projeto
-            baseStructureGenerator.createBaseStructure();
+            baseStructureGenerator.createBaseStructure(appName);
 
             // Gera arquivos fundamentais do projeto
-            pomGenerator.generatePom(PROJECT_NAME);
-            mainClassGenerator.generateMainClass(PROJECT_NAME);
-            gitignoreGenerator.generateGitignore();
-            appPropsGenerator.generateApplicationProperties(PROJECT_NAME);
+            pomGenerator.generatePom(appName);
+            mainClassGenerator.generateMainClass(appName);
+            gitignoreGenerator.generateGitignore(appName);
+            appPropsGenerator.generateApplicationProperties(appName);
+
+            String baseDir = appName + "/src/main/java/com/metagen/backend/generated/";
 
             // Sempre gera entidade User para autenticação
-            entityGenerator.generateUserEntity(BASE_DIR);
-            repositoryGenerator.generateUserRepository(BASE_DIR);
+            entityGenerator.generateUserEntity(baseDir);
+            repositoryGenerator.generateUserRepository(baseDir);
 
             // Gera entidades e camadas associadas
             for (Map<String, Object> entity : entities) {
@@ -55,29 +57,29 @@ public class CodeGeneratorService {
                 List<Map<String, Object>> rels = (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
 
                 // Sempre gera entidade, repositório, DTO e serviço
-                entityGenerator.generateEntity(BASE_DIR, name, attrs, rels);
-                repositoryGenerator.generateRepository(BASE_DIR, name);
-                dtoGenerator.generateDTOs(BASE_DIR, name, attrs);
-                serviceGenerator.generateService(BASE_DIR, name, entity);
+                entityGenerator.generateEntity(baseDir, name, attrs, rels, appName);
+                repositoryGenerator.generateRepository(baseDir, name);
+                dtoGenerator.generateDTOs(baseDir, name, attrs);
+                serviceGenerator.generateService(baseDir, name, entity);
 
                 // Gera controller apenas se houver endpoints configurados
                 Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
                 List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
                 if (!endpoints.isEmpty()) {
-                    controllerGenerator.generateController(BASE_DIR, name, attrs, entity);
+                    controllerGenerator.generateController(baseDir, name, attrs, entity);
                 }
             }
 
             // Gera camadas adicionais
-            securityGenerator.generateSecurityClasses(BASE_DIR);
-            exceptionHandlerGenerator.generateGlobalExceptionHandler(BASE_DIR);
+            securityGenerator.generateSecurityClasses(baseDir);
+            exceptionHandlerGenerator.generateGlobalExceptionHandler(baseDir);
 
             // Gera front-end Thymeleaf
-            thymeleafGenerator.generateTemplates(entities);
+            thymeleafGenerator.generateTemplates(entities, appName);
 
             // Gera controller do backoffice
             BackofficeControllerGenerator backofficeControllerGenerator = new BackofficeControllerGenerator();
-            backofficeControllerGenerator.generateBackofficeController(entities);
+            backofficeControllerGenerator.generateBackofficeController(entities, appName);
 
         } catch (IOException e) {
             throw new RuntimeException("Erro ao gerar backend: " + e.getMessage(), e);
