@@ -11,10 +11,14 @@ public class RepositoryGenerator {
 
             import com.metagen.backend.generated.entity.%s;
             import org.springframework.data.jpa.repository.JpaRepository;
+            import org.springframework.data.domain.Page;
+            import org.springframework.data.domain.Pageable;
 
             public interface %sRepository extends JpaRepository<%s, Long> {
+                Page<%s> findAll(Pageable pageable);
+                Page<%s> findByNameContainingIgnoreCase(String name, Pageable pageable);
             }
-            """.formatted(entityName, entityName, entityName);
+            """.formatted(entityName, entityName, entityName, entityName, entityName);
 
         Files.createDirectories(Paths.get(baseDir + "repository/"));
         Files.writeString(Paths.get(baseDir + "repository/" + entityName + "Repository.java"), code);

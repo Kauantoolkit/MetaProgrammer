@@ -14,8 +14,13 @@ public class EntityGenerator {
         sb.append("package com.metagen.backend.generated.entity;\n\n")
           .append("import jakarta.persistence.*;\n")
           .append("import jakarta.validation.constraints.*;\n")
+          .append("import org.springframework.data.annotation.CreatedDate;\n")
+          .append("import org.springframework.data.annotation.LastModifiedDate;\n")
+          .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n")
+          .append("import java.time.LocalDateTime;\n")
           .append("import java.util.*;\n\n")
           .append("@Entity\n@Table(name = \"" + name.toLowerCase() + "\")\n")
+          .append("@EntityListeners(AuditingEntityListener.class)\n")
           .append("public class " + name + " {\n\n");
 
         for (Map<String, Object> attr : attrs) {
@@ -50,6 +55,13 @@ public class EntityGenerator {
                     sb.append("    @ManyToMany\n    private List<" + target + "> " + field + " = new ArrayList<>();\n\n");
             }
         }
+
+        // Campos de auditoria
+        sb.append("    @CreatedDate\n")
+          .append("    @Column(updatable = false)\n")
+          .append("    private LocalDateTime createdAt;\n\n")
+          .append("    @LastModifiedDate\n")
+          .append("    private LocalDateTime updatedAt;\n\n");
 
         sb.append("}\n");
 
