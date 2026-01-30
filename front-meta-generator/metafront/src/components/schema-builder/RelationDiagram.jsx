@@ -112,28 +112,36 @@ export default function RelationDiagram({ entities,
 
   // 🔹 Conexões usam posições dinâmicas
   const connections = useMemo(() => {
-    const conns = [];
-    const seen = new Set();
+  const conns = [];
+  const seen = new Set();
 
-    entities.forEach((entity, fromIndex) => {
-      entity.relations?.forEach((relation) => {
-        const toIndex = entities.findIndex(e => e.name === relation.target);
-        if (toIndex === -1) return;
+  entities.forEach((entity, fromIndex) => {
+    entity.relations?.forEach((relation) => {
+      const toIndex = entities.findIndex(e => e.name === relation.target);
+      if (toIndex === -1) return;
 
-        const key = [entity.name, relation.target].sort().join('|') + '|' + relation.type;
-        if (seen.has(key)) return;
-        seen.add(key);
+      // 🔹 Normaliza 1:N ↔ N:1 para evitar duplicidade
+      let key;
+      if ((relation.type === '1:N' || relation.type === 'N:1')) {
+        key = [entity.name, relation.target].sort().join('|'); // ignora tipo
+      } else {
+        key = [entity.name, relation.target, relation.type].sort().join('|');
+      }
 
-        conns.push({
-          from: nodePositions[fromIndex],
-          to: nodePositions[toIndex],
-          type: relation.type,
-        });
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      conns.push({
+        from: nodePositions[fromIndex],
+        to: nodePositions[toIndex],
+        type: relation.type,
       });
     });
+  });
 
-    return conns;
-  }, [entities, nodePositions]);
+  return conns;
+}, [entities, nodePositions]);
+
 
   const getRelationColor = (type) => {
     switch (type) {

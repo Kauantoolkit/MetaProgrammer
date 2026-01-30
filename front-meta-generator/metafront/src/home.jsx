@@ -69,10 +69,78 @@ const loadNodePositions = () => {
   return [];
 };
 
+const SYSTEM_USER_ENTITY = {
+  name: "User",
+  fixed: true,
+  attributes: [
+    { name: "id", type: "Long", constraints: ["primary_key"] },
+    { name: "username", type: "String", constraints: ["unique"] },
+    { name: "email", type: "String", constraints: ["unique"] },
+    { name: "password", type: "String" },
+    { name: "role", type: "Enum" },
+    { name: "enabled", type: "Boolean", default: true }
+  ],
+  relations: [],
+  behaviors: [],
+  api: { endpoints: ["crud"], auth: "required", roles: ["admin"] }
+};
+
+const mirrorType = (type) => {
+  switch (type) {
+    case "1:N": return "N:1";
+    case "N:1": return "1:N";
+    case "1:1": return "1:1";
+    case "N:N": return "N:N";
+    default: return type;
+  }
+};
+
+const syncRelations = (entities, sourceEntity) => {
+  return entities.map(entity => {
+    if (entity.name === sourceEntity.name) return entity;
+
+    const relationFromSource = sourceEntity.relations.find(r => r.target === entity.name);
+
+    // ❌ Se não existe mais relação do source → REMOVE espelho antigo
+    if (!relationFromSource) {
+      return {
+        ...entity,
+        relations: entity.relations.filter(r => r.target !== sourceEntity.name)
+      };
+    }
+
+    const expectedType = mirrorType(relationFromSource.type);
+
+    const otherRelations = entity.relations.filter(r => r.target !== sourceEntity.name);
+
+    return {
+      ...entity,
+      relations: [
+        ...otherRelations,
+        {
+          target: sourceEntity.name,
+          type: expectedType,
+          required: relationFromSource.required ?? false,
+          cascade: relationFromSource.cascade ?? "restrict"
+        }
+      ]
+    };
+  });
+};
+
+
+
+
+
 
 export default function Home() {
   const [nodePositions, setNodePositions] = useState(loadNodePositions);
-  const [entities, setEntities] = useState(loadEntities);
+  const [entities, setEntities] = useState(() => {
+  const loaded = loadEntities();
+  const hasUser = loaded.some(e => e.name === "User");
+  return hasUser ? loaded : [SYSTEM_USER_ENTITY, ...loaded];
+});
+
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [rightPanel, setRightPanel] = useState('json');
   const [appName, setAppName] = useState('my-app');
@@ -120,14 +188,21 @@ export default function Home() {
   }, [appName]);
 
   const handleUpdateEntity = (updatedEntity) => {
-    setEntities(prev => prev.map(e => e.name === updatedEntity.name ? updatedEntity : e));
-    setSelectedEntity(updatedEntity);
-  };
+  setEntities(prev => {
+    const updatedList = prev.map(e =>
+      e.name === updatedEntity.name ? updatedEntity : e
+    );
+
+    return syncRelations(updatedList, updatedEntity);
+  });
+
+  setSelectedEntity(updatedEntity);
+};
 
   const handleAddEntity = () => {
     const newEntity = {
       name: `NovaEntidade${entities.length + 1}`,
-      attributes: [{ name: "id", type: "number", constraints: ["primary_key", "auto_increment"] }],
+      attributes: [{ name: "id", type: "Long", constraints: ["primary_key", "auto_increment"] }],
       relations: [],
       behaviors: [],
       api: { endpoints: ["crud"], auth: "required", roles: ["admin"] }

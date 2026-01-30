@@ -23,33 +23,87 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
   const otherEntities = allEntities.filter(e => e.name !== entity.name);
 
   const handleAddRelation = () => {
-    if (otherEntities.length === 0) return;
+  if (otherEntities.length === 0) return;
 
-    const newRelation = {
-      target: otherEntities[0].name,
-      type: 'N:1',
-      required: false,
-      cascade: 'restrict'
-    };
+  const targetEntity = otherEntities[0];
 
-    onUpdate({
-      ...entity,
-      relations: [...entity.relations, newRelation]
+  const newRelation = {
+    target: targetEntity.name,
+    type: 'N:1',
+    required: false,
+    cascade: 'restrict'
+  };
+
+  // Atualiza a entidade atual
+  onUpdate({
+    ...entity,
+    relations: [...entity.relations, newRelation]
+  }, (allEntities) => {
+    // Atualiza a entidade alvo espelhando a relação
+    return allEntities.map(e => {
+      if (e.name === targetEntity.name) {
+        const reverseType = newRelation.type === '1:N' ? 'N:1'
+                         : newRelation.type === 'N:1' ? '1:N'
+                         : newRelation.type;
+
+        const exists = e.relations?.some(r => r.target === entity.name);
+        if (exists) return e;
+
+        return {
+          ...e,
+          relations: [...(e.relations || []), { target: entity.name, type: reverseType, required: false, cascade: 'restrict' }]
+        };
+      }
+      return e;
     });
-  };
+  });
+};
 
-  const handleUpdateRelation = (index, updates) => {
-    const newRelations = [...entity.relations];
-    newRelations[index] = { ...newRelations[index], ...updates };
-    onUpdate({ ...entity, relations: newRelations });
-  };
+const handleUpdateRelation = (index, updates) => {
+  const newRelations = [...entity.relations];
+  const oldRelation = newRelations[index];
+  newRelations[index] = { ...oldRelation, ...updates };
 
-  const handleDeleteRelation = (index) => {
-    onUpdate({
-      ...entity,
-      relations: entity.relations.filter((_, i) => i !== index)
+  onUpdate({ ...entity, relations: newRelations }, (allEntities) => {
+    return allEntities.map(e => {
+      if (e.name === oldRelation.target) {
+        const reverseType = newRelations[index].type === '1:N' ? 'N:1'
+                         : newRelations[index].type === 'N:1' ? '1:N'
+                         : newRelations[index].type;
+
+        const relIndex = e.relations.findIndex(r => r.target === entity.name);
+        const newRel = { target: entity.name, type: reverseType, required: newRelations[index].required, cascade: newRelations[index].cascade };
+
+        let updatedRels = [...(e.relations || [])];
+        if (relIndex !== -1) updatedRels[relIndex] = newRel;
+        else updatedRels.push(newRel);
+
+        return { ...e, relations: updatedRels };
+      }
+      return e;
     });
-  };
+  });
+};
+
+const handleDeleteRelation = (index) => {
+  const relToRemove = entity.relations[index];
+
+  onUpdate({
+    ...entity,
+    relations: entity.relations.filter((_, i) => i !== index)
+  }, (allEntities) => {
+    return allEntities.map(e => {
+      if (e.name === relToRemove.target) {
+        return {
+          ...e,
+          relations: (e.relations || []).filter(r => r.target !== entity.name)
+        };
+      }
+      return e;
+    });
+  });
+};
+
 
   const getRelationColor = (type) => {
     switch (type) {
@@ -61,7 +115,6 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
     }
   };
 
-  // 👇 NOVO — define claramente quem é 1 e quem é N
   const getCardinality = (type) => {
     switch (type) {
       case '1:1': return { left: '1', right: '1', symbol: '↔' };
@@ -72,62 +125,47 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
     }
   };
 
+  const relationsToShow = entity.relations || [];
+
   return (
     <div className="space-y-4">
-      {entity.relations.length === 0 ? (
+      {relationsToShow.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
           <ArrowLeftRight className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p>Nenhuma relação definida</p>
           <p className="text-sm mt-1">Adicione relações com outras entidades</p>
         </div>
       ) : (
-        entity.relations.map((relation, index) => {
+        relationsToShow.map((relation, index) => {
           const card = getCardinality(relation.type);
 
           return (
-            <div
-              key={index}
-              className="rounded-xl border border-slate-800 bg-slate-900/50 p-5"
-            >
-              {/* 🔥 VISUAL CLARO DA RELAÇÃO */}
+            <div key={index} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
               <div className="flex items-center justify-center gap-6 mb-6 py-4 bg-slate-800/50 rounded-lg">
-                
-                {/* ENTIDADE ATUAL */}
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-sm font-bold text-white">
-                      {entity.name.charAt(0)}
-                    </span>
+                    <span className="text-sm font-bold text-white">{entity.name.charAt(0)}</span>
                   </div>
                   <span className="text-xs text-slate-400">{entity.name}</span>
                 </div>
 
-                {/* CARDINALIDADE */}
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-white">{card.left}</span>
-
                   <div className={cn(
                     "px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r",
                     getRelationColor(relation.type)
-                  )}>
-                    {card.symbol}
-                  </div>
-
+                  )}>{card.symbol}</div>
                   <span className="text-lg font-bold text-white">{card.right}</span>
                 </div>
 
-                {/* ENTIDADE ALVO */}
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-sm font-bold text-white">
-                      {relation.target.charAt(0)}
-                    </span>
+                    <span className="text-sm font-bold text-white">{relation.target.charAt(0)}</span>
                   </div>
                   <span className="text-xs text-slate-400">{relation.target}</span>
                 </div>
               </div>
 
-              {/* CONFIG */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-slate-500 mb-1.5 block">Entidade Alvo</label>
@@ -139,7 +177,7 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {otherEntities.map((e) => (
+                      {otherEntities.map(e => (
                         <SelectItem key={e.name} value={e.name}>{e.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -156,10 +194,8 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {RELATION_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
+                      {RELATION_TYPES.map(type => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -176,7 +212,7 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CASCADE_OPTIONS.map((opt) => (
+                    {CASCADE_OPTIONS.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>
                         <div>
                           <span className="font-medium">{opt.label}</span>
