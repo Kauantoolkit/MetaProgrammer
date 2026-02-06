@@ -4,15 +4,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, Check, Download, Minimize2, Maximize2, Rocket, Upload } from 'lucide-react';
 import { toast } from "sonner";
 
-export default function JsonPreview({ entities, appName, onLoadEntities }) {
+export default function JsonPreview({ entities, appName, nodePositions, onLoadProject }) {
   const [copied, setCopied] = useState(false);
   const [showSimplified, setShowSimplified] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [pastedJson, setPastedJson] = useState('');
 
-  // Generate simplified JSON (like original format)
   const simplifiedJson = {
     appName,
+    nodePositions,
     entities: entities.map(e => ({
       name: e.name,
       attributes: e.attributes.map(a => ({
@@ -27,14 +27,14 @@ export default function JsonPreview({ entities, appName, onLoadEntities }) {
     }))
   };
 
-  // Full enriched JSON
   const enrichedJson = {
     appName,
+    nodePositions,
     entities: entities.map(e => ({
       name: e.name,
       attributes: e.attributes.map(a => {
         const attr = { name: a.name, type: a.type };
-        if (a.constraints?.length > 0) attr.constraints = a.constraints;
+        if (a.constraints?.length) attr.constraints = a.constraints;
         if (a.values) attr.values = a.values;
         if (a.default !== undefined) attr.default = a.default;
         return attr;
@@ -89,7 +89,6 @@ export default function JsonPreview({ entities, appName, onLoadEntities }) {
     }
   };
 
-  // Syntax highlighting
   const highlightJson = (json) => {
     return json
       .replace(/"([^"]+)":/g, '<span class="text-violet-400">"$1"</span>:')
@@ -101,74 +100,37 @@ export default function JsonPreview({ entities, appName, onLoadEntities }) {
 
   return (
     <div className="h-full flex flex-col relative">
-      {/* Header */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button
-            variant={!showSimplified ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setShowSimplified(false)}
-            className="text-xs"
-          >
-            <Maximize2 className="w-3 h-3 mr-1.5" />
-            Enriquecido
+          <Button variant={!showSimplified ? "secondary" : "ghost"} size="sm" onClick={() => setShowSimplified(false)} className="text-xs">
+            <Maximize2 className="w-3 h-3 mr-1.5" /> Enriquecido
           </Button>
-          <Button
-            variant={showSimplified ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setShowSimplified(true)}
-            className="text-xs"
-          >
-            <Minimize2 className="w-3 h-3 mr-1.5" />
-            Simplificado
+          <Button variant={showSimplified ? "secondary" : "ghost"} size="sm" onClick={() => setShowSimplified(true)} className="text-xs">
+            <Minimize2 className="w-3 h-3 mr-1.5" /> Simplificado
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowLoadModal(true)}
-            className="text-blue-400 hover:text-blue-300"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setShowLoadModal(true)} className="text-blue-400 hover:text-blue-300">
             <Upload className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={generateBackend}
-            className="text-emerald-400 hover:text-emerald-300"
-          >
+          <Button variant="ghost" size="sm" onClick={generateBackend} className="text-emerald-400 hover:text-emerald-300">
             <Rocket className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={downloadJson}
-            className="text-slate-400 hover:text-white"
-          >
+          <Button variant="ghost" size="sm" onClick={downloadJson} className="text-slate-400 hover:text-white">
             <Download className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={copyToClipboard}
-            className="text-slate-400 hover:text-white"
-          >
+          <Button variant="ghost" size="sm" onClick={copyToClipboard} className="text-slate-400 hover:text-white">
             {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
       </div>
 
-      {/* JSON Content */}
       <ScrollArea className="flex-1">
         <pre className="p-4 text-xs leading-relaxed">
-          <code
-            dangerouslySetInnerHTML={{ __html: highlightJson(jsonString) }}
-          />
+          <code dangerouslySetInnerHTML={{ __html: highlightJson(jsonString) }} />
         </pre>
       </ScrollArea>
 
-      {/* Load Modal */}
       {showLoadModal && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
           <div className="bg-slate-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
@@ -180,31 +142,32 @@ export default function JsonPreview({ entities, appName, onLoadEntities }) {
               className="w-full h-64 p-3 bg-slate-900 border border-slate-600 rounded text-sm font-mono text-slate-200 resize-none"
             />
             <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setShowLoadModal(false);
-                  setPastedJson('');
-                }}
-              >
+              <Button variant="ghost" onClick={() => { setShowLoadModal(false); setPastedJson(''); }}>
                 Cancel
               </Button>
               <Button
                 onClick={() => {
-                  console.log('Load JSON clicked, pastedJson:', pastedJson);
                   try {
                     const parsed = JSON.parse(pastedJson);
-                    console.log('Parsed JSON:', parsed);
-                    if (Array.isArray(parsed)) {
-                      onLoadEntities(parsed);
+
+                    if (parsed.entities) {
+                      onLoadProject(parsed);
+                      toast.success('Projeto carregado com sucesso!');
                       setShowLoadModal(false);
                       setPastedJson('');
-                      toast.success('Entities loaded successfully!');
-                    } else {
-                      toast.error('Invalid JSON: must be an array of entities');
+                      return;
                     }
+
+                    if (Array.isArray(parsed)) {
+                      onLoadProject({ appName: "my-app", entities: parsed, nodePositions: [] });
+                      toast.success('Entities carregadas (formato antigo)!');
+                      setShowLoadModal(false);
+                      setPastedJson('');
+                      return;
+                    }
+
+                    toast.error('JSON inválido');
                   } catch (err) {
-                    console.error('JSON parse error:', err);
                     toast.error('Invalid JSON: ' + err.message);
                   }
                 }}
@@ -217,7 +180,6 @@ export default function JsonPreview({ entities, appName, onLoadEntities }) {
         </div>
       )}
 
-      {/* Footer Stats */}
       <div className="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
         <span>{entities.length} entidades</span>
         <span>{jsonString.length.toLocaleString()} caracteres</span>

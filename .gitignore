@@ -1,9 +1,0 @@
-/target/
-/.idea/
-/.vscode/
-*.iml
-*.log
-.DS_Store
-/bin/
-/build/
-/generated_app/

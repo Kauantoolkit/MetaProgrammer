@@ -1,0 +1,220 @@
+{
+  "appName": "my-app",
+  "nodePositions": [
+    {
+      "x": 560,
+      "y": 100
+    },
+    {
+      "x": 120,
+      "y": 240
+    },
+    {
+      "x": 560,
+      "y": 240
+    },
+    {
+      "x": 560,
+      "y": 380
+    }
+  ],
+  "entities": [
+    {
+      "name": "User",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "Long",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "username",
+          "type": "String",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "password",
+          "type": "String"
+        },
+        {
+          "name": "role",
+          "type": "Enum"
+        },
+        {
+          "name": "enabled",
+          "type": "Boolean",
+          "default": true
+        }
+      ],
+      "relations": [],
+      "behaviors": [],
+      "api": {
+        "endpoints": [],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
+    },
+    {
+      "name": "ConversionType",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "input_format",
+          "type": "string",
+          "constraints": [
+            "required",
+            "min:1",
+            "max_length:20"
+          ]
+        },
+        {
+          "name": "output_format",
+          "type": "string",
+          "constraints": [
+            "required",
+            "min:1",
+            "max_length:50"
+          ]
+        },
+        {
+          "name": "enabled",
+          "type": "boolean"
+        }
+      ],
+      "relations": [
+        {
+          "target": "ConversionJob",
+          "type": "1:N",
+          "required": false,
+          "cascade": "restrict"
+        }
+      ],
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
+    },
+    {
+      "name": "ConversionJob",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "cj_input_format",
+          "type": "string",
+          "constraints": [
+            "min:1",
+            "max_length:50",
+            "required"
+          ]
+        },
+        {
+          "name": "cj_output_format",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "cj_sucess",
+          "type": "boolean",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "cj_client_ip",
+          "type": "string"
+        }
+      ],
+      "relations": [
+        {
+          "target": "ConversionType",
+          "type": "N:1",
+          "required": false,
+          "cascade": "restrict"
+        }
+      ],
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
+    },
+    {
+      "name": "ClientUsage",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "clientIp",
+          "type": "string",
+          "constraints": [
+            "min:1",
+            "max_length:20",
+            "required"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "conversions_today",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        }
+      ],
+      "relations": [],
+      "behaviors": [],
+      "api": {
+        "endpoints": [],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
+    }
+  ]
+}

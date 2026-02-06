@@ -75,7 +75,6 @@ const SYSTEM_USER_ENTITY = {
   attributes: [
     { name: "id", type: "Long", constraints: ["primary_key"] },
     { name: "username", type: "String", constraints: ["unique"] },
-    { name: "email", type: "String", constraints: ["unique"] },
     { name: "password", type: "String" },
     { name: "role", type: "Enum" },
     { name: "enabled", type: "Boolean", default: true }
@@ -212,19 +211,41 @@ export default function Home() {
   };
 
   const handleDeleteEntity = (entityName) => {
-    setEntities(prev => prev.filter(e => e.name !== entityName));
-    if (selectedEntity?.name === entityName) setSelectedEntity(null);
-  };
+  if (entityName === "User") return;
+  setEntities(prev =>
+    prev
+      .filter(e => e.name !== entityName)
+      .map(e => ({
+        ...e,
+        relations: e.relations.filter(r => r.target !== entityName)
+      }))
+  );
+
+  if (selectedEntity?.name === entityName) setSelectedEntity(null);
+};
+
 
   const handleRenameEntity = (oldName, newName) => {
-    setEntities(prev =>
-      prev.map(e => {
-        if (e.name === oldName) return { ...e, name: newName };
-        return { ...e, relations: e.relations.map(r => r.target === oldName ? { ...r, target: newName } : r) };
-      })
-    );
-    if (selectedEntity?.name === oldName) setSelectedEntity(prev => ({ ...prev, name: newName }));
-  };
+  setEntities(prev => {
+    const renamed = prev.map(e => {
+      if (e.name === oldName) return { ...e, name: newName };
+      return {
+        ...e,
+        relations: e.relations.map(r =>
+          r.target === oldName ? { ...r, target: newName } : r
+        )
+      };
+    });
+
+    const updatedEntity = renamed.find(e => e.name === newName);
+    return syncRelations(renamed, updatedEntity);
+  });
+
+  if (selectedEntity?.name === oldName)
+    setSelectedEntity(prev => ({ ...prev, name: newName }));
+};
+
+
 
   const rightPanelWidth =
     rightPanel === 'diagram'
@@ -312,13 +333,25 @@ export default function Home() {
           <div className="flex-1 overflow-auto p-4">
             {rightPanel === 'json' ? (
               <JsonPreview
-                entities={entities}
-                appName={appName}
-                onLoadEntities={(loaded) => {
-                  setEntities(loaded);
-                  setSelectedEntity(loaded[0] || null);
-                }}
-              />
+  entities={entities}
+  appName={appName}
+  nodePositions={nodePositions}
+  onLoadProject={(data) => {
+  if (!data) return;
+
+  const loadedEntities = data.entities || [];
+  const hasUser = loadedEntities.some(e => e.name === "User");
+
+  const finalEntities = hasUser
+    ? loadedEntities
+    : [SYSTEM_USER_ENTITY, ...loadedEntities];
+
+  setAppName(data.appName || "my-app");
+  setNodePositions(data.nodePositions || []);
+  setEntities(finalEntities);
+  setSelectedEntity(finalEntities[0] || null);
+}}
+/>
             ) : (
               <div className="w-full h-full min-h-[600px]">
                <RelationDiagram
