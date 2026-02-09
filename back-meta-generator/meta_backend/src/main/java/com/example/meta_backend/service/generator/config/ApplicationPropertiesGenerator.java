@@ -5,7 +5,8 @@ import java.nio.file.*;
 
 public class ApplicationPropertiesGenerator {
     public void generateApplicationProperties(String projectName) throws IOException {
-        String baseDir = projectName + "/src/main/resources/";
+        Path rootDir = Paths.get(System.getProperty("user.dir"));
+        String baseDir = rootDir.resolve(projectName + "/src/main/resources/").toString();
         Files.createDirectories(Paths.get(baseDir));
 
         String props = """

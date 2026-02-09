@@ -10,8 +10,9 @@ public class ThymeleafFrontGenerator {
     private String baseDir;
 
     public void generateTemplates(List<Map<String, Object>> entities, String appName) throws IOException {
-        String baseDir = appName + "/src/main/resources/templates/";
-        String staticDir = appName + "/src/main/resources/static/";
+        Path rootDir = Paths.get(System.getProperty("user.dir"));
+        String baseDir = rootDir.resolve(appName + "/src/main/resources/templates/").toString();
+        String staticDir = rootDir.resolve(appName + "/src/main/resources/static/").toString();
         // Cria pastas base
         Files.createDirectories(Paths.get(baseDir + "layouts"));
         Files.createDirectories(Paths.get(baseDir + "fragments"));

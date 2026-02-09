@@ -2,6 +2,7 @@ package com.example.meta_backend.service.generator;
 
 import org.springframework.stereotype.Service;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.*;
 
 import com.example.meta_backend.service.generator.base.*;
@@ -44,7 +45,8 @@ public class CodeGeneratorService {
             gitignoreGenerator.generateGitignore(appName);
             appPropsGenerator.generateApplicationProperties(appName);
 
-            String baseDir = appName + "/src/main/java/com/metagen/backend/generated/";
+            Path rootDir = Paths.get(System.getProperty("user.dir"));
+            String baseDir = rootDir.resolve(appName + "/src/main/java/com/metagen/backend/generated/").toString();
 
             // Sempre gera entidade User para autenticação
             entityGenerator.generateUserEntity(baseDir);

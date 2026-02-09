@@ -10,7 +10,8 @@ public class BackofficeControllerGenerator {
     private static final String BASE_DIR = "generated_app/src/main/java/com/metagen/backend/generated/controller/";
 
     public void generateBackofficeController(List<Map<String, Object>> entities, String appName) throws IOException {
-        String baseDir = appName + "/src/main/java/com/metagen/backend/generated/controller/";
+        Path rootDir = Paths.get(System.getProperty("user.dir"));
+        String baseDir = rootDir.resolve(appName + "/src/main/java/com/metagen/backend/generated/controller/").toString();
         Files.createDirectories(Paths.get(baseDir));
 
         StringBuilder sb = new StringBuilder();

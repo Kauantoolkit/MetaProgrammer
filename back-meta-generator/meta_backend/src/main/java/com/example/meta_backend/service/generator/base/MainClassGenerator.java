@@ -5,8 +5,10 @@ import java.nio.file.*;
 
 public class MainClassGenerator {
     public void generateMainClass(String projectName) throws IOException {
-        String baseDir = projectName + "/src/main/java/com/metagen/backend/generated/";
-    String className = toCamelCase(projectName) + "Application";
+        Path rootDir = Paths.get(System.getProperty("user.dir"));
+        String baseDir = rootDir.resolve(projectName + "/src/main/java/com/metagen/backend/generated/").toString();
+        String className = toCamelCase(projectName.replace("generated_", "")) + "Application";
+        String fileName = className + ".java";
 
     String content = """
         package com.metagen.backend.generated;
@@ -25,7 +27,7 @@ public class MainClassGenerator {
     // Cria diretório base
     Files.createDirectories(Paths.get(baseDir));
     // Salva arquivo com o nome correto da classe pública
-    Files.writeString(Paths.get(baseDir + className + ".java"), content);
+    Files.writeString(Paths.get(baseDir + fileName), content);
 }
 
 

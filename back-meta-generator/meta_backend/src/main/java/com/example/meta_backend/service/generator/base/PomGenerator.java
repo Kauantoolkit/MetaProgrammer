@@ -8,7 +8,8 @@ public class PomGenerator {
     private static final String BASE_DIR = "generated_app/";
 
     public void generatePom(String projectName) throws IOException {
-        String baseDir = projectName + "/";
+        Path rootDir = Paths.get(System.getProperty("user.dir"));
+        String baseDir = rootDir.resolve(projectName + "/").toString();
         String pom = """
             <?xml version="1.0" encoding="UTF-8"?>
 
