@@ -11,6 +11,7 @@ import com.example.meta_backend.service.generator.entity.*;
 import com.example.meta_backend.service.generator.layer.*;
 import com.example.meta_backend.service.generator.config.*;
 import com.example.meta_backend.service.generator.security.*;
+import com.example.meta_backend.service.generator.functionality.*;
 
 @Service
 public class CodeGeneratorService {
@@ -32,6 +33,11 @@ public class CodeGeneratorService {
     private final ThymeleafFrontGenerator thymeleafGenerator;
     private final BackofficeControllerGenerator backofficeControllerGenerator;
 
+    private final FunctionalityDtoGenerator functionalityDtoGenerator;
+    private final FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator;
+    private final FunctionalityServiceImplGenerator functionalityServiceImplGenerator;
+    private final FunctionalityControllerGenerator functionalityControllerGenerator;
+
     public CodeGeneratorService(
             BaseStructureGenerator baseStructureGenerator,
             PomGenerator pomGenerator,
@@ -46,7 +52,11 @@ public class CodeGeneratorService {
             SecurityGenerator securityGenerator,
             GlobalExceptionHandlerGenerator exceptionHandlerGenerator,
             ThymeleafFrontGenerator thymeleafGenerator,
-            BackofficeControllerGenerator backofficeControllerGenerator
+            BackofficeControllerGenerator backofficeControllerGenerator,
+            FunctionalityDtoGenerator functionalityDtoGenerator,
+            FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator,
+            FunctionalityServiceImplGenerator functionalityServiceImplGenerator,
+            FunctionalityControllerGenerator functionalityControllerGenerator
     ) {
         this.baseStructureGenerator = baseStructureGenerator;
         this.pomGenerator = pomGenerator;
@@ -62,9 +72,13 @@ public class CodeGeneratorService {
         this.exceptionHandlerGenerator = exceptionHandlerGenerator;
         this.thymeleafGenerator = thymeleafGenerator;
         this.backofficeControllerGenerator = backofficeControllerGenerator;
+        this.functionalityDtoGenerator = functionalityDtoGenerator;
+        this.functionalityServiceInterfaceGenerator = functionalityServiceInterfaceGenerator;
+        this.functionalityServiceImplGenerator = functionalityServiceImplGenerator;
+        this.functionalityControllerGenerator = functionalityControllerGenerator;
     }
 
-    public void generateApplication(String appName, List<Map<String, Object>> entities) {
+    public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities) {
         try {
             generateProjectStructure(appName);
             generateCoreFiles(appName);
@@ -73,6 +87,7 @@ public class CodeGeneratorService {
 
             generateSecurityUser(baseDir);
             generateDomainLayers(baseDir, entities, appName);
+            generateFunctionalities(baseDir, functionalities);
             generateInfrastructure(baseDir);
             generateFrontend(entities, appName);
             generateBackoffice(entities, appName);
@@ -141,5 +156,14 @@ public class CodeGeneratorService {
 
     private void generateBackoffice(List<Map<String, Object>> entities, String appName) throws IOException {
         backofficeControllerGenerator.generateBackofficeController(entities, appName);
+    }
+
+    private void generateFunctionalities(String baseDir, List<Map<String, Object>> functionalities) throws IOException {
+        if (!functionalities.isEmpty()) {
+            functionalityDtoGenerator.generateFunctionalityDTOs(baseDir, functionalities);
+            functionalityServiceInterfaceGenerator.generateFunctionalityServiceInterfaces(baseDir, functionalities);
+            functionalityServiceImplGenerator.generateFunctionalityServiceImpls(baseDir, functionalities);
+            functionalityControllerGenerator.generateFunctionalityControllers(baseDir, functionalities);
+        }
     }
 }

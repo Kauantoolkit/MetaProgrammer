@@ -9,6 +9,19 @@
     { "x": 665.3333129882812, "y": 191.3333282470703 },
     { "x": 898.6666259765625, "y": 378 }
   ],
+  "functionalities": [
+    {
+      "name": "ApproveOrder",
+      "entity": "Pedido",
+      "input": [
+        { "name": "orderId", "type": "Long" },
+        { "name": "approved", "type": "Boolean" }
+      ],
+      "output": [
+        { "name": "message", "type": "String" }
+      ]
+    }
+  ],
   "entities": [
     {
       "name": "User",
