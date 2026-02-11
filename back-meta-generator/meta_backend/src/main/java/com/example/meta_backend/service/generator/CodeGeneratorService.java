@@ -1,8 +1,10 @@
 package com.example.meta_backend.service.generator;
 
 import org.springframework.stereotype.Service;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import com.example.meta_backend.service.generator.base.*;
 import com.example.meta_backend.service.generator.entity.*;
@@ -13,76 +15,131 @@ import com.example.meta_backend.service.generator.security.*;
 @Service
 public class CodeGeneratorService {
 
-    private final BaseStructureGenerator baseStructureGenerator = new BaseStructureGenerator();
-    private final PomGenerator pomGenerator = new PomGenerator();
-    private final MainClassGenerator mainClassGenerator = new MainClassGenerator();
-    private final GitignoreGenerator gitignoreGenerator = new GitignoreGenerator();
-    private final ApplicationPropertiesGenerator appPropsGenerator = new ApplicationPropertiesGenerator();
+    private final BaseStructureGenerator baseStructureGenerator;
+    private final PomGenerator pomGenerator;
+    private final MainClassGenerator mainClassGenerator;
+    private final GitignoreGenerator gitignoreGenerator;
+    private final ApplicationPropertiesGenerator appPropsGenerator;
 
-    private final EntityGenerator entityGenerator = new EntityGenerator();
-    private final RepositoryGenerator repositoryGenerator = new RepositoryGenerator();
-    private final DtoGenerator dtoGenerator = new DtoGenerator();
-    private final ServiceGenerator serviceGenerator = new ServiceGenerator();
-    private final ControllerGenerator controllerGenerator = new ControllerGenerator();
+    private final EntityGenerator entityGenerator;
+    private final RepositoryGenerator repositoryGenerator;
+    private final DtoGenerator dtoGenerator;
+    private final ServiceGenerator serviceGenerator;
+    private final ControllerGenerator controllerGenerator;
 
-    private final SecurityGenerator securityGenerator = new SecurityGenerator();
-    private final GlobalExceptionHandlerGenerator exceptionHandlerGenerator = new GlobalExceptionHandlerGenerator();
+    private final SecurityGenerator securityGenerator;
+    private final GlobalExceptionHandlerGenerator exceptionHandlerGenerator;
+    private final ThymeleafFrontGenerator thymeleafGenerator;
+    private final BackofficeControllerGenerator backofficeControllerGenerator;
 
-    private final ThymeleafFrontGenerator thymeleafGenerator = new ThymeleafFrontGenerator();
+    public CodeGeneratorService(
+            BaseStructureGenerator baseStructureGenerator,
+            PomGenerator pomGenerator,
+            MainClassGenerator mainClassGenerator,
+            GitignoreGenerator gitignoreGenerator,
+            ApplicationPropertiesGenerator appPropsGenerator,
+            EntityGenerator entityGenerator,
+            RepositoryGenerator repositoryGenerator,
+            DtoGenerator dtoGenerator,
+            ServiceGenerator serviceGenerator,
+            ControllerGenerator controllerGenerator,
+            SecurityGenerator securityGenerator,
+            GlobalExceptionHandlerGenerator exceptionHandlerGenerator,
+            ThymeleafFrontGenerator thymeleafGenerator,
+            BackofficeControllerGenerator backofficeControllerGenerator
+    ) {
+        this.baseStructureGenerator = baseStructureGenerator;
+        this.pomGenerator = pomGenerator;
+        this.mainClassGenerator = mainClassGenerator;
+        this.gitignoreGenerator = gitignoreGenerator;
+        this.appPropsGenerator = appPropsGenerator;
+        this.entityGenerator = entityGenerator;
+        this.repositoryGenerator = repositoryGenerator;
+        this.dtoGenerator = dtoGenerator;
+        this.serviceGenerator = serviceGenerator;
+        this.controllerGenerator = controllerGenerator;
+        this.securityGenerator = securityGenerator;
+        this.exceptionHandlerGenerator = exceptionHandlerGenerator;
+        this.thymeleafGenerator = thymeleafGenerator;
+        this.backofficeControllerGenerator = backofficeControllerGenerator;
+    }
 
-    private static final String PROJECT_NAME = "generated_app";
-    private static final String BASE_DIR = PROJECT_NAME + "/src/main/java/com/metagen/backend/generated/";
-
-    public void generateEntities(String appName, List<Map<String, Object>> entities) {
+    public void generateApplication(String appName, List<Map<String, Object>> entities) {
         try {
-            // Cria a estrutura base do projeto
-            baseStructureGenerator.createBaseStructure(appName);
+            generateProjectStructure(appName);
+            generateCoreFiles(appName);
 
-            // Gera arquivos fundamentais do projeto
-            pomGenerator.generatePom(appName);
-            mainClassGenerator.generateMainClass(appName);
-            gitignoreGenerator.generateGitignore(appName);
-            appPropsGenerator.generateApplicationProperties(appName);
+            String baseDir = buildBaseDir(appName);
 
-            String baseDir = appName + "/src/main/java/com/metagen/backend/generated/";
-
-            // Sempre gera entidade User para autenticação
-            entityGenerator.generateUserEntity(baseDir);
-            repositoryGenerator.generateUserRepository(baseDir);
-
-            // Gera entidades e camadas associadas
-            for (Map<String, Object> entity : entities) {
-                String name = (String) entity.get("name");
-                List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
-                List<Map<String, Object>> rels = (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
-
-                // Sempre gera entidade, repositório, DTO e serviço
-                entityGenerator.generateEntity(baseDir, name, attrs, rels, appName);
-                repositoryGenerator.generateRepository(baseDir, name);
-                dtoGenerator.generateDTOs(baseDir, name, attrs);
-                serviceGenerator.generateService(baseDir, name, entity);
-
-                // Gera controller apenas se houver endpoints configurados
-                Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
-                List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
-                if (!endpoints.isEmpty()) {
-                    controllerGenerator.generateController(baseDir, name, attrs, entity);
-                }
-            }
-
-            // Gera camadas adicionais
-            securityGenerator.generateSecurityClasses(baseDir);
-            exceptionHandlerGenerator.generateGlobalExceptionHandler(baseDir);
-
-            // Gera front-end Thymeleaf
-            thymeleafGenerator.generateTemplates(entities, appName);
-
-            // Gera controller do backoffice
-            BackofficeControllerGenerator backofficeControllerGenerator = new BackofficeControllerGenerator();
-            backofficeControllerGenerator.generateBackofficeController(entities, appName);
+            generateSecurityUser(baseDir);
+            generateDomainLayers(baseDir, entities, appName);
+            generateInfrastructure(baseDir);
+            generateFrontend(entities, appName);
+            generateBackoffice(entities, appName);
 
         } catch (IOException e) {
-            throw new RuntimeException("Erro ao gerar backend: " + e.getMessage(), e);
+            throw new RuntimeException("Erro ao gerar aplicação: " + e.getMessage(), e);
         }
+    }
+
+    private void generateProjectStructure(String appName) throws IOException {
+        baseStructureGenerator.createBaseStructure(appName);
+    }
+
+    private void generateCoreFiles(String appName) throws IOException {
+        pomGenerator.generatePom(appName);
+        mainClassGenerator.generateMainClass(appName);
+        gitignoreGenerator.generateGitignore(appName);
+        appPropsGenerator.generateApplicationProperties(appName);
+    }
+
+    private String buildBaseDir(String appName) {
+        return appName + "/src/main/java/com/metagen/backend/generated/";
+    }
+
+    private void generateSecurityUser(String baseDir) throws IOException {
+        entityGenerator.generateUserEntity(baseDir);
+        repositoryGenerator.generateUserRepository(baseDir);
+    }
+
+    private void generateDomainLayers(String baseDir, List<Map<String, Object>> entities, String appName) throws IOException {
+        for (Map<String, Object> entity : entities) {
+            String name = (String) entity.get("name");
+
+            List<Map<String, Object>> attrs =
+                    (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
+
+            List<Map<String, Object>> rels =
+                    (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
+
+            entityGenerator.generateEntity(baseDir, name, attrs, rels, appName);
+            repositoryGenerator.generateRepository(baseDir, name);
+            dtoGenerator.generateDTOs(baseDir, name, attrs);
+            serviceGenerator.generateService(baseDir, name, entity);
+
+            generateControllerIfNeeded(baseDir, name, attrs, entity);
+        }
+    }
+
+    private void generateControllerIfNeeded(String baseDir, String name, List<Map<String, Object>> attrs, Map<String, Object> entity) throws IOException {
+        Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
+        List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
+
+        if (!endpoints.isEmpty()) {
+            controllerGenerator.generateController(baseDir, name, attrs, entity);
+        }
+    }
+
+    private void generateInfrastructure(String baseDir) throws IOException {
+        securityGenerator.generateSecurityClasses(baseDir);
+        exceptionHandlerGenerator.generateGlobalExceptionHandler(baseDir);
+    }
+
+    private void generateFrontend(List<Map<String, Object>> entities, String appName) throws IOException {
+        thymeleafGenerator.generateTemplates(entities, appName);
+    }
+
+    private void generateBackoffice(List<Map<String, Object>> entities, String appName) throws IOException {
+        backofficeControllerGenerator.generateBackofficeController(entities, appName);
     }
 }

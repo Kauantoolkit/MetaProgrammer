@@ -6,8 +6,18 @@ import java.util.*;
 
 public class EntityGenerator {
 
-    public void generateEntity(String baseDir, String name, List<Map<String, Object>> attrs, List<Map<String, Object>> rels, String appName) throws IOException {
-        Path entityPath = Paths.get(baseDir + "entity/" + name + ".java");
+    public void generateEntity(String baseDir,
+                               String name,
+                               List<Map<String, Object>> attrs,
+                               List<Map<String, Object>> rels,
+                               String appName) throws IOException {
+
+        if (name == null || name.isBlank()) return;
+
+        String className = sanitizeClassName(name);
+        String tableName = sanitizeTableName(name);
+
+        Path entityPath = Paths.get(baseDir + "entity/" + className + ".java");
         Files.createDirectories(entityPath.getParent());
 
         StringBuilder sb = new StringBuilder();
@@ -19,44 +29,76 @@ public class EntityGenerator {
           .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n")
           .append("import java.time.LocalDateTime;\n")
           .append("import java.util.*;\n\n")
-          .append("@Entity\n@Table(name = \"" + name.toLowerCase() + "\")\n")
+          .append("@Entity\n@Table(name = \"" + tableName + "\")\n")
           .append("@EntityListeners(AuditingEntityListener.class)\n")
-          .append("public class " + name + " {\n\n");
+          .append("public class " + className + " {\n\n");
 
-        for (Map<String, Object> attr : attrs) {
-            String type = mapType((String) attr.get("type"));
-            String field = (String) attr.get("name");
+        boolean hasId = false;
 
-            if (field.equalsIgnoreCase("id")) {
-                sb.append("    @Id\n")
-                  .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
-                type = "Long"; // Force Long for ID with IDENTITY strategy
-            } else {
-                sb.append("    @NotNull\n");
-            }
+        if (attrs != null) {
+            for (Map<String, Object> attr : attrs) {
+                if (attr == null) continue;
 
-            sb.append("    private " + type + " " + field + ";\n\n");
-        }
+                String field = (String) attr.get("name");
+                if (field == null || field.isBlank()) continue;
 
-        // relações (se houver)
-        for (Map<String, Object> rel : rels) {
-            String type = (String) rel.get("type");
-            String target = (String) rel.get("target");
-            String field = (String) rel.get("name");
+                field = sanitizeFieldName(field);
+                String type = mapType((String) attr.get("type"));
 
-            switch (type.toLowerCase()) {
-                case "onetoone" ->
-                    sb.append("    @OneToOne\n    private " + target + " " + field + ";\n\n");
-                case "onetomany" ->
-                    sb.append("    @OneToMany(mappedBy = \"" + name.toLowerCase() + "\")\n    private List<" + target + "> " + field + " = new ArrayList<>();\n\n");
-                case "manytoone" ->
-                    sb.append("    @ManyToOne\n    private " + target + " " + field + ";\n\n");
-                case "manytomany" ->
-                    sb.append("    @ManyToMany\n    private List<" + target + "> " + field + " = new ArrayList<>();\n\n");
+                if (field.equalsIgnoreCase("id")) {
+                    hasId = true;
+                    sb.append("    @Id\n")
+                      .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n")
+                      .append("    private Long id;\n\n");
+                    continue;
+                }
+
+                sb.append("    @NotNull\n")
+                  .append("    private ").append(type).append(" ").append(field).append(";\n\n");
             }
         }
 
-        // Campos de auditoria
+        if (!hasId) {
+            sb.append("    @Id\n")
+              .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n")
+              .append("    private Long id;\n\n");
+        }
+
+        if (rels != null) {
+            for (Map<String, Object> rel : rels) {
+                if (rel == null) continue;
+
+                String type = (String) rel.get("type");
+                String target = (String) rel.get("target");
+                String field = (String) rel.get("name");
+
+                if (type == null || target == null || field == null) continue;
+
+                target = sanitizeClassName(target);
+                field = sanitizeFieldName(field);
+
+                switch (type.toLowerCase()) {
+                    case "onetoone" ->
+                        sb.append("    @OneToOne\n")
+                          .append("    private ").append(target).append(" ").append(field).append(";\n\n");
+
+                    case "onetomany" ->
+                        sb.append("    @OneToMany\n")
+                          .append("    private List<").append(target).append("> ").append(field)
+                          .append(" = new ArrayList<>();\n\n");
+
+                    case "manytoone" ->
+                        sb.append("    @ManyToOne\n")
+                          .append("    private ").append(target).append(" ").append(field).append(";\n\n");
+
+                    case "manytomany" ->
+                        sb.append("    @ManyToMany\n")
+                          .append("    private List<").append(target).append("> ").append(field)
+                          .append(" = new ArrayList<>();\n\n");
+                }
+            }
+        }
+
         sb.append("    @CreatedDate\n")
           .append("    @Column(updatable = false)\n")
           .append("    private LocalDateTime createdAt;\n\n")
@@ -96,7 +138,6 @@ public class EntityGenerator {
                 @NotNull
                 private String roles;
 
-                // Getters and Setters
                 public Long getId() { return id; }
                 public void setId(Long id) { this.id = id; }
 
@@ -122,8 +163,24 @@ public class EntityGenerator {
             case "long" -> "Long";
             case "boolean" -> "Boolean";
             case "double" -> "Double";
-            case "date" -> "Date";
+            case "date" -> "LocalDateTime";
             default -> "String";
         };
+    }
+
+    private String sanitizeClassName(String name) {
+        String cleaned = name.replaceAll("[^a-zA-Z0-9]", "");
+        if (cleaned.isBlank()) return "Entity";
+        return Character.toUpperCase(cleaned.charAt(0)) + cleaned.substring(1);
+    }
+
+    private String sanitizeFieldName(String name) {
+        String cleaned = name.replaceAll("[^a-zA-Z0-9]", "");
+        if (cleaned.isBlank()) return "field";
+        return Character.toLowerCase(cleaned.charAt(0)) + cleaned.substring(1);
+    }
+
+    private String sanitizeTableName(String name) {
+        return name.toLowerCase().replaceAll("[^a-z0-9_]", "_");
     }
 }

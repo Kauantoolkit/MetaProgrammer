@@ -27,7 +27,7 @@ public String generate(@RequestBody Map<String, Object> payload) {
     String appName = (String) payload.get("appName");
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> entities = (List<Map<String, Object>>) payload.get("entities");
-    generatorService.generateEntities(appName, entities);
+    generatorService.generateApplication(appName, entities);
     return "Código gerado em /" + appName + "/";
 }}
 
