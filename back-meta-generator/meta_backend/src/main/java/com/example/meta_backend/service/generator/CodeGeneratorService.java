@@ -17,6 +17,7 @@ import com.example.meta_backend.service.generator.functionality.*;
 public class CodeGeneratorService {
 
     private final BaseStructureGenerator baseStructureGenerator;
+    private final BaseStructureGenerator flywayGenerator;
     private final PomGenerator pomGenerator;
     private final MainClassGenerator mainClassGenerator;
     private final GitignoreGenerator gitignoreGenerator;
@@ -59,6 +60,7 @@ public class CodeGeneratorService {
             FunctionalityControllerGenerator functionalityControllerGenerator
     ) {
         this.baseStructureGenerator = baseStructureGenerator;
+        this.flywayGenerator = baseStructureGenerator;
         this.pomGenerator = pomGenerator;
         this.mainClassGenerator = mainClassGenerator;
         this.gitignoreGenerator = gitignoreGenerator;
@@ -106,6 +108,7 @@ public class CodeGeneratorService {
         mainClassGenerator.generateMainClass(appName);
         gitignoreGenerator.generateGitignore(appName);
         appPropsGenerator.generateApplicationProperties(appName);
+        flywayGenerator.generateFlywayMigration(appName);
     }
 
     private String buildBaseDir(String appName) {

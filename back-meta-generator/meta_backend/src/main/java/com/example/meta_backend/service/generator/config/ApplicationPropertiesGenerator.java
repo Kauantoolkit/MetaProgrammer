@@ -18,7 +18,10 @@ public class ApplicationPropertiesGenerator {
             spring.datasource.driverClassName=org.postgresql.Driver
             spring.datasource.username=postgres
             spring.datasource.password=postgres
-            spring.jpa.hibernate.ddl-auto=update
+            spring.jpa.hibernate.ddl-auto=validate
+            spring.flyway.enabled=true
+            spring.flyway.baseline-on-migrate=true
+            spring.flyway.locations=classpath:db/migration
             server.error.include-message=always
             server.error.include-stacktrace=never
             """.formatted(projectName, projectName.toLowerCase());
