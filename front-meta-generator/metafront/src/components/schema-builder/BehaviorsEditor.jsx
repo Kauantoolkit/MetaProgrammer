@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import  Input  from "@/components/ui/input";
+import Input from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import  Switch  from "@/components/ui/switch";
-import  Badge  from "@/components/ui/badge";
+import Switch from "@/components/ui/switch";
+import Badge from "@/components/ui/badge";
 import { Plus, Trash2, Zap, Clock, Shield, History, GitBranch, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 

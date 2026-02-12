@@ -5,6 +5,9 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class BackofficeControllerGenerator {
 
     public void generateBackofficeController(List<Map<String, Object>> entities, String appName) throws IOException {

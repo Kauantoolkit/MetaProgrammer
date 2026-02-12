@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.base;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class PomGenerator {
 
     private static final String BASE_DIR = "generated_app/";

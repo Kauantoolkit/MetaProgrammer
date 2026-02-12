@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.security;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class SecurityGenerator {
 
     public void generateSecurityClasses(String baseDir) throws IOException {

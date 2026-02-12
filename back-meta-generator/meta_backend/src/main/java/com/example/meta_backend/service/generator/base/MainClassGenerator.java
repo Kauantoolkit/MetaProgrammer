@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.base;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class MainClassGenerator {
     public void generateMainClass(String projectName) throws IOException {
         String baseDir = projectName + "/src/main/java/com/metagen/backend/generated/";

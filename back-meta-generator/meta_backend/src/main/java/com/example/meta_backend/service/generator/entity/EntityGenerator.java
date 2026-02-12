@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class EntityGenerator {
 
     public void generateEntity(String baseDir,

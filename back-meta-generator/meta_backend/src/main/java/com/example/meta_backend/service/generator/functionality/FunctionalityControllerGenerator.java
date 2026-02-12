@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class FunctionalityControllerGenerator {
 
     public void generateFunctionalityControllers(String baseDir, List<Map<String, Object>> functionalities) throws IOException {
@@ -25,10 +28,11 @@ public class FunctionalityControllerGenerator {
                           .append("    private ").append(serviceInterfaceName).append(" ").append(serviceInterfaceName.substring(0, 1).toLowerCase() + serviceInterfaceName.substring(1)).append(";\n\n");
 
             String methodName = funcName.substring(0, 1).toLowerCase() + funcName.substring(1);
+            String endpoint = "/" + methodName.replaceAll("([A-Z])", "-$1").toLowerCase();
             String requestDto = funcName + "RequestDto";
             String responseDto = funcName + "ResponseDto";
 
-            controllerCode.append("    @PostMapping\n")
+            controllerCode.append("    @PostMapping(\"").append(endpoint).append("\")\n")
                           .append("    public ").append(responseDto).append(" ").append(methodName).append("(@RequestBody ").append(requestDto).append(" request) {\n")
                           .append("        return ").append(serviceInterfaceName.substring(0, 1).toLowerCase() + serviceInterfaceName.substring(1)).append(".").append(methodName).append("(request);\n")
                           .append("    }\n\n");

@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.entity;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class RepositoryGenerator {
 
     public void generateRepository(String baseDir, String entityName) throws IOException {

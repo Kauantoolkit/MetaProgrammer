@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.config;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class GlobalExceptionHandlerGenerator {
 
     public void generateGlobalExceptionHandler(String baseDir) throws IOException {

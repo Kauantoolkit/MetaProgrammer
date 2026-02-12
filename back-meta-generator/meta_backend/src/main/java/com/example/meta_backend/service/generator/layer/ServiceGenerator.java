@@ -5,6 +5,9 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class ServiceGenerator {
 
     public void generateService(String baseDir, String name, Map<String, Object> entity) throws IOException {

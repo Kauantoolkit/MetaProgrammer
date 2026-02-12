@@ -1,12 +1,12 @@
 import { useState } from "react";
 
-export default function Switch({ checked, onChange, className = "" }) {
+export function Switch({ checked, onCheckedChange, className = "" }) {
   const [internalChecked, setInternalChecked] = useState(checked || false);
 
   const toggle = () => {
     const newValue = !internalChecked;
     setInternalChecked(newValue);
-    onChange && onChange(newValue);
+    onCheckedChange && onCheckedChange(newValue);
   };
 
   return (
@@ -30,3 +30,5 @@ export default function Switch({ checked, onChange, className = "" }) {
     </button>
   );
 }
+
+export default Switch;

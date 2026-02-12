@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class FunctionalityServiceInterfaceGenerator {
 
     public void generateFunctionalityServiceInterfaces(String baseDir, List<Map<String, Object>> functionalities) throws IOException {

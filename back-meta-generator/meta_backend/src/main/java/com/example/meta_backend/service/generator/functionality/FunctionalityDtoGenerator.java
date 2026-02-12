@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class FunctionalityDtoGenerator {
 
     public void generateFunctionalityDTOs(String baseDir, List<Map<String, Object>> functionalities) throws IOException {
@@ -24,16 +27,25 @@ public class FunctionalityDtoGenerator {
         dto.append("package com.metagen.backend.generated.dto.functionality;\n\n")
            .append("public class ").append(className).append(" {\n\n");
 
+        int fieldIndex = 1;
         for (Map<String, Object> field : inputFields) {
             String type = (String) field.get("type");
             String name = (String) field.get("name");
+            if (name == null || name.trim().isEmpty()) {
+                name = "inputField" + fieldIndex;
+            }
             dto.append("    private ").append(mapType(type)).append(" ").append(name).append(";\n");
+            fieldIndex++;
         }
 
         // Add getters and setters
+        fieldIndex = 1;
         for (Map<String, Object> field : inputFields) {
             String type = (String) field.get("type");
             String name = (String) field.get("name");
+            if (name == null || name.trim().isEmpty()) {
+                name = "inputField" + fieldIndex;
+            }
             String capitalizedName = name.substring(0, 1).toUpperCase() + name.substring(1);
 
             dto.append("\n    public ").append(mapType(type)).append(" get").append(capitalizedName).append("() {\n")
@@ -42,6 +54,7 @@ public class FunctionalityDtoGenerator {
                .append("    public void set").append(capitalizedName).append("(").append(mapType(type)).append(" ").append(name).append(") {\n")
                .append("        this.").append(name).append(" = ").append(name).append(";\n")
                .append("    }\n");
+            fieldIndex++;
         }
 
         dto.append("}\n");
