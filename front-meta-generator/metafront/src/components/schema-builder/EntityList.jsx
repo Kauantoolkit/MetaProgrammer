@@ -20,7 +20,7 @@ export default function EntityList({ entities, selectedEntity, onSelect, onAdd, 
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {entities.map((entity) => {
-            const isFixed = entity.fixed === true || entity.name === "User";
+            const isFixed = entity.fixed === true || entity.name === "Users";
 
             return (
               <div

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ApplicationPropertiesGenerator {
-    public void generateApplicationProperties(String projectName) throws IOException {
+    public void generateApplicationProperties(String projectName, String adminPassword) throws IOException {
         String baseDir = projectName + "/src/main/resources/";
         Files.createDirectories(Paths.get(baseDir));
 
@@ -24,7 +24,10 @@ public class ApplicationPropertiesGenerator {
             spring.flyway.locations=classpath:db/migration
             server.error.include-message=always
             server.error.include-stacktrace=never
-            """.formatted(projectName, projectName.toLowerCase());
+            
+            # Admin user configuration
+            admin.password=%s
+            """.formatted(projectName, projectName.toLowerCase(), adminPassword);
 
         Files.writeString(Paths.get(baseDir + "application.properties"), props);
     }

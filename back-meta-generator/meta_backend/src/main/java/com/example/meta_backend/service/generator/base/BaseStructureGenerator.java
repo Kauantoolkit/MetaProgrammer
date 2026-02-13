@@ -27,17 +27,5 @@ public class BaseStructureGenerator {
         Files.createDirectories(Paths.get(dbMigrationDir));
     }
 
-    public void generateFlywayMigration(String appName) throws IOException {
-        String dbMigrationDir = appName + "/src/main/resources/db/migration/";
-        String migrationFile = "V1__Create_admin_user.sql";
-
-        String migration = """
-            -- Create admin user
-            INSERT INTO users (username, password, roles) VALUES
-            ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN')
-            ON CONFLICT (username) DO NOTHING;
-            """;
-
-        Files.writeString(Paths.get(dbMigrationDir + migrationFile), migration);
-    }
+   //aqui tinha uma flyway migration bomba sem nexo
 }

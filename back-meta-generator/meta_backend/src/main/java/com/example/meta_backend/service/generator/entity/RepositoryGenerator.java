@@ -1,7 +1,8 @@
 package com.example.meta_backend.service.generator.entity;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,18 @@ import org.springframework.stereotype.Component;
 public class RepositoryGenerator {
 
     public void generateRepository(String baseDir, String entityName) throws IOException {
+        String className = capitalizeFirstLetter(entityName);
+        
+        boolean hasNameField = hasNameField(className);
+
+        String searchMethod = "";
+        if (hasNameField) {
+            searchMethod = """
+                    
+                    Page<%s> findByNameContainingIgnoreCase(String name, Pageable pageable);
+                    """.formatted(className);
+        }
+
         String code = """
             package com.metagen.backend.generated.repository;
 
@@ -18,29 +31,53 @@ public class RepositoryGenerator {
             import org.springframework.data.domain.Pageable;
 
             public interface %sRepository extends JpaRepository<%s, Long> {
-                Page<%s> findAll(Pageable pageable);
-                Page<%s> findByNameContainingIgnoreCase(String name, Pageable pageable);
+            %s
             }
-            """.formatted(entityName, entityName, entityName, entityName, entityName);
+            """.formatted(className, className, className, searchMethod);
 
         Files.createDirectories(Paths.get(baseDir + "repository/"));
-        Files.writeString(Paths.get(baseDir + "repository/" + entityName + "Repository.java"), code);
+        Files.writeString(
+                Paths.get(baseDir + "repository/" + className + "Repository.java"),
+                code
+        );
+    }
+    
+    private String capitalizeFirstLetter(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 
-    public void generateUserRepository(String baseDir) throws IOException {
+    private boolean hasNameField(String entityName) {
+        try {
+            Class<?> clazz = Class.forName(
+                    "com.metagen.backend.generated.entity." + entityName
+            );
+            clazz.getDeclaredField("name");
+            return true;
+        } catch (ClassNotFoundException | NoSuchFieldException e) {
+            return false;
+        }
+    }
+
+    public void generateUsersRepository(String baseDir) throws IOException {
         String code = """
             package com.metagen.backend.generated.repository;
 
-            import com.metagen.backend.generated.entity.User;
+            import com.metagen.backend.generated.entity.Users;
             import org.springframework.data.jpa.repository.JpaRepository;
             import java.util.Optional;
 
-            public interface UserRepository extends JpaRepository<User, Long> {
-                Optional<User> findByUsername(String username);
+            public interface UsersRepository extends JpaRepository<Users, Long> {
+                Optional<Users> findByUsername(String username);
             }
             """;
 
         Files.createDirectories(Paths.get(baseDir + "repository/"));
-        Files.writeString(Paths.get(baseDir + "repository/UserRepository.java"), code);
+        Files.writeString(
+                Paths.get(baseDir + "repository/UsersRepository.java"),
+                code
+        );
     }
 }

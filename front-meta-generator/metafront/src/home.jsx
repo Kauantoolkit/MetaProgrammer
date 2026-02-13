@@ -103,8 +103,8 @@ const loadFunctionalities = () => {
   return [];
 };
 
-const SYSTEM_USER_ENTITY = {
-  name: "User",
+const SYSTEM_USERS_ENTITY = {
+  name: "Users",
   fixed: true,
   attributes: [
     { name: "id", type: "Long", constraints: ["primary_key"] },
@@ -170,8 +170,8 @@ export default function Home() {
   const [nodePositions, setNodePositions] = useState(loadNodePositions);
   const [entities, setEntities] = useState(() => {
   const loaded = loadEntities();
-  const hasUser = loaded.some(e => e.name === "User");
-  return hasUser ? loaded : [SYSTEM_USER_ENTITY, ...loaded];
+  const hasUsers = loaded.some(e => e.name === "Users");
+  return hasUsers ? loaded : [SYSTEM_USERS_ENTITY, ...loaded];
 });
 
   const [selectedEntity, setSelectedEntity] = useState(null);
@@ -280,7 +280,7 @@ export default function Home() {
   };
 
   const handleDeleteEntity = (entityName) => {
-  if (entityName === "User") return;
+  if (entityName === "Users") return;
   setEntities(prev =>
     prev
       .filter(e => e.name !== entityName)
@@ -489,11 +489,11 @@ export default function Home() {
   if (!data) return;
 
   const loadedEntities = data.entities || [];
-  const hasUser = loadedEntities.some(e => e.name === "User");
+  const hasUsers = loadedEntities.some(e => e.name === "Users");
 
-  const finalEntities = hasUser
+  const finalEntities = hasUsers
     ? loadedEntities
-    : [SYSTEM_USER_ENTITY, ...loadedEntities];
+    : [SYSTEM_USERS_ENTITY, ...loadedEntities];
 
   setAppName(data.appName || "my-app");
   setNodePositions(data.nodePositions || []);

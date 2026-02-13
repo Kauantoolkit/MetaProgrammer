@@ -20,7 +20,7 @@
   ],
   "entities": [
     {
-      "name": "User",
+      "name": "Users",
       "attributes": [
         {
           "name": "id",

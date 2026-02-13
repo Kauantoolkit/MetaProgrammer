@@ -30,11 +30,18 @@ public class FlywayMigrationGenerator {
                 String name = (String) entity.get("name");
                 if (name == null || name.isBlank()) continue;
                 
+                // Skip the Users entity - it's already created for security
+                if ("Users".equalsIgnoreCase(name) || "User".equalsIgnoreCase(name)) {
+                    continue;
+                }
+                
                 String tableName = name.toLowerCase().replaceAll("[^a-z0-9_]", "_");
                 List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
                 List<Map<String, Object>> rels = (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
+                List<String> behaviors = (List<String>) entity.getOrDefault("behaviors", List.of());
                 
-                sql.append(createTableStatement(tableName, attrs, rels));
+                sql.append(createTableStatement(tableName, attrs, rels, behaviors));
+
                 sql.append("\n\n");
             }
             
@@ -47,6 +54,9 @@ public class FlywayMigrationGenerator {
                     String type = (String) rel.get("type");
                     String target = (String) rel.get("target");
                     
+                    // Convert relation type from "1:1", "1:N", "N:1", "N:N" to JPA format
+                    type = convertRelationType(type);
+                    
                     if (type != null && target != null && type.equalsIgnoreCase("manytomany")) {
                         String targetTable = target.toLowerCase().replaceAll("[^a-z0-9_]", "_");
                         sql.append(createJoinTable(sourceTable, targetTable));
@@ -57,17 +67,8 @@ public class FlywayMigrationGenerator {
         }
         
         Files.writeString(Paths.get(dbMigrationDir + "V1__Initial_schema.sql"), sql.toString());
-        
-        // Generate V2__Create_admin_user.sql
-        String adminMigration = """
-            -- Create admin user
-            INSERT INTO users (username, password, roles) VALUES
-            ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN')
-            ON CONFLICT (username) DO NOTHING;
-            """;
-        
-        Files.writeString(Paths.get(dbMigrationDir + "V2__Create_admin_user.sql"), adminMigration);
     }
+
     
     private String createUsersTable() {
         return """
@@ -82,12 +83,19 @@ public class FlywayMigrationGenerator {
     
     private String createTableStatement(String tableName, 
                                          List<Map<String, Object>> attrs, 
-                                         List<Map<String, Object>> rels) {
+                                         List<Map<String, Object>> rels,
+                                         List<String> behaviors) {
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE ").append(tableName).append(" (\n");
         sb.append("    id BIGSERIAL PRIMARY KEY,\n");
         
+        boolean hasTimestamps = behaviors != null && behaviors.contains("timestamps");
+        boolean hasSoftDelete = behaviors != null && behaviors.contains("soft_delete");
+        boolean hasVersioning = behaviors != null && behaviors.contains("versioning");
+
+        
         // Add columns from attributes
+
         if (attrs != null) {
             for (Map<String, Object> attr : attrs) {
                 if (attr == null) continue;
@@ -102,15 +110,20 @@ public class FlywayMigrationGenerator {
             }
         }
         
-        // Add foreign keys for ManyToOne relationships
+        // Add foreign keys for ManyToOne and OneToOne relationships
         if (rels != null) {
             for (Map<String, Object> rel : rels) {
                 if (rel == null) continue;
                 
                 String type = (String) rel.get("type");
-                String target = (String) rel.get("name");
+                String target = (String) rel.get("target");
                 
-                if (type != null && target != null && type.equalsIgnoreCase("manytoone")) {
+                // Convert relation type from "1:1", "1:N", "N:1", "N:N" to JPA format
+                type = convertRelationType(type);
+                
+                // Support both ManyToOne and OneToOne relationships (both need foreign keys)
+                if (type != null && target != null && 
+                    (type.equalsIgnoreCase("manytoone") || type.equalsIgnoreCase("onetoone"))) {
                     String targetTable = target.toLowerCase().replaceAll("[^a-z0-9_]", "_");
                     String columnName = targetTable + "_id";
                     sb.append("    ").append(columnName).append(" BIGINT");
@@ -119,13 +132,31 @@ public class FlywayMigrationGenerator {
             }
         }
         
+        // Add timestamp columns if behavior is enabled
+        if (hasTimestamps) {
+            sb.append("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
+            sb.append("    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
+        }
+        
+        // Add soft delete column if behavior is enabled
+        if (hasSoftDelete) {
+            sb.append("    deleted_at TIMESTAMP,\n");
+        }
+        
+        // Add versioning column if behavior is enabled
+        if (hasVersioning) {
+            sb.append("    version BIGINT DEFAULT 0,\n");
+        }
+        
         // Remove last comma and newline, close the statement
+
         String result = sb.toString();
         if (result.endsWith(",\n")) {
             result = result.substring(0, result.length() - 2) + "\n";
         }
         
         result += ");\n";
+
         
         // Add indexes for better performance
         result += "\n-- Create indexes for " + tableName + "\n";
@@ -175,6 +206,22 @@ public class FlywayMigrationGenerator {
             case "localdate", "localdatetime" -> "TIMESTAMP";
             case "bigdecimal" -> "DECIMAL(19,2)";
             default -> "VARCHAR(255)";
+        };
+    }
+    
+    /**
+     * Converts relation type notation from "1:1", "1:N", "N:1", "N:N" to JPA format
+     * "onetoone", "onetomany", "manytoone", "manytomany"
+     */
+    private String convertRelationType(String type) {
+        if (type == null) return null;
+        
+        return switch (type.toUpperCase()) {
+            case "1:1" -> "ONETOONE";
+            case "1:N" -> "ONETOMANY";
+            case "N:1" -> "MANYTOONE";
+            case "N:N" -> "MANYTOMANY";
+            default -> type.toUpperCase();
         };
     }
 }
