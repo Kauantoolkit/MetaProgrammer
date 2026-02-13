@@ -69,7 +69,7 @@ export default function OutputEditor({ functionality, onUpdate }) {
             value={newFieldName}
             onChange={(e) => setNewFieldName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addField()}
-            className="flex-1 bg-slate-900 border-slate-600"
+            className="flex-1/2 bg-slate-900 border-slate-600"
           />
           <Select value={newFieldType} onValueChange={setNewFieldType}>
             <SelectTrigger className="w-32 bg-slate-900 border-slate-600">
@@ -100,7 +100,7 @@ export default function OutputEditor({ functionality, onUpdate }) {
         {outputFields.map((field, index) => (
           <div key={index} className="p-4 bg-slate-800/30 rounded-lg border border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="flex-1">
+              <div className="w-1/2">
                 <Input
                   value={field.name}
                   onChange={(e) => updateField(index, { ...field, name: e.target.value })}

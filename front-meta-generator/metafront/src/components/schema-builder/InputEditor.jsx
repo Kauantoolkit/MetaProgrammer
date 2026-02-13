@@ -100,7 +100,7 @@ export default function InputEditor({ functionality, onUpdate }) {
         {inputFields.map((field, index) => (
           <div key={index} className="p-4 bg-slate-800/30 rounded-lg border border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="flex-1">
+              <div className="w-1/2">
                 <Input
                   value={field.name}
                   onChange={(e) => updateField(index, { ...field, name: e.target.value })}
