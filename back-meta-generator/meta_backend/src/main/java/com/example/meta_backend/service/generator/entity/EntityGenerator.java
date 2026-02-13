@@ -1,8 +1,11 @@
 package com.example.meta_backend.service.generator.entity;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -27,11 +30,13 @@ public class EntityGenerator {
         sb.append("package com.metagen.backend.generated.entity;\n\n")
           .append("import jakarta.persistence.*;\n")
           .append("import jakarta.validation.constraints.*;\n")
+          .append("import lombok.*;\n")
           .append("import org.springframework.data.annotation.CreatedDate;\n")
           .append("import org.springframework.data.annotation.LastModifiedDate;\n")
           .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n")
           .append("import java.time.LocalDateTime;\n")
           .append("import java.util.*;\n\n")
+          .append("@Data\n")
           .append("@Entity\n@Table(name = \"" + tableName + "\")\n")
           .append("@EntityListeners(AuditingEntityListener.class)\n")
           .append("public class " + className + " {\n\n");
