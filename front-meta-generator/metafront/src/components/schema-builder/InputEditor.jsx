@@ -69,7 +69,7 @@ export default function InputEditor({ functionality, onUpdate }) {
             value={newFieldName}
             onChange={(e) => setNewFieldName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addField()}
-            className="flex-1"
+            className="flex-1/2"
           />
           <Select value={newFieldType} onValueChange={setNewFieldType}>
             <SelectTrigger className="w-32 bg-slate-900 border-slate-600">
