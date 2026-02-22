@@ -1,156 +1,749 @@
 {
   "appName": "my-app",
   "nodePositions": [
-    { "x": 70.6666259765625, "y": 138.3333282470703 },
-    { "x": 642.333251953125, "y": 533 },
-    { "x": 418.33331298828125, "y": 13.333328247070312 },
-    { "x": 678.6666259765625, "y": 67.33332824707031 },
-    { "x": 642.6666259765625, "y": 361.3333282470703 },
-    { "x": 665.3333129882812, "y": 191.3333282470703 },
-    { "x": 898.6666259765625, "y": 378 }
+    {
+      "x": 70.6666259765625,
+      "y": 138.3333282470703
+    },
+    {
+      "x": 642.333251953125,
+      "y": 533
+    },
+    {
+      "x": 418.33331298828125,
+      "y": 13.333328247070312
+    },
+    {
+      "x": 678.6666259765625,
+      "y": 67.33332824707031
+    },
+    {
+      "x": 642.6666259765625,
+      "y": 361.3333282470703
+    },
+    {
+      "x": 665.3333129882812,
+      "y": 191.3333282470703
+    },
+    {
+      "x": 898.6666259765625,
+      "y": 378
+    }
   ],
   "functionalities": [
     {
       "name": "ApproveOrder",
-      "entity": "Pedido",
       "input": [
-        { "name": "orderId", "type": "Long" },
-        { "name": "approved", "type": "Boolean" }
+        {
+          "name": "orderId",
+          "type": "Long"
+        },
+        {
+          "name": "approved",
+          "type": "Boolean"
+        }
       ],
       "output": [
-        { "name": "message", "type": "String" }
-      ]
+        {
+          "name": "message",
+          "type": "String"
+        }
+      ],
+      "entity": "Pedido",
+      "exposeInBackoffice": false
+    },
+    {
+      "name": "CancelOrder",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        },
+        {
+          "name": "reason",
+          "type": "String"
+        }
+      ],
+      "output": [
+        {
+          "name": "message",
+          "type": "String"
+        }
+      ],
+      "entity": "Pedido",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "AddItemToOrder",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        },
+        {
+          "name": "productId",
+          "type": "Long"
+        },
+        {
+          "name": "quantity",
+          "type": "Integer"
+        }
+      ],
+      "output": [
+        {
+          "name": "subtotal",
+          "type": "Double"
+        },
+        {
+          "name": "totalAmount",
+          "type": "Double"
+        }
+      ],
+      "entity": "PedidoItem",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "RemoveItemFromOrder",
+      "input": [
+        {
+          "name": "orderItemId",
+          "type": "Long"
+        }
+      ],
+      "output": [
+        {
+          "name": "totalAmount",
+          "type": "Double"
+        }
+      ],
+      "entity": "PedidoItem",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "UpdateOrderStatus",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        },
+        {
+          "name": "status",
+          "type": "String"
+        }
+      ],
+      "output": [
+        {
+          "name": "message",
+          "type": "String"
+        }
+      ],
+      "entity": "Pedido",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "RegisterPayment",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        },
+        {
+          "name": "amount",
+          "type": "Double"
+        },
+        {
+          "name": "method",
+          "type": "String"
+        }
+      ],
+      "output": [
+        {
+          "name": "paymentId",
+          "type": "Long"
+        },
+        {
+          "name": "status",
+          "type": "String"
+        }
+      ],
+      "entity": "Pagamento",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "RefundPayment",
+      "input": [
+        {
+          "name": "paymentId",
+          "type": "Long"
+        },
+        {
+          "name": "reason",
+          "type": "String"
+        }
+      ],
+      "output": [
+        {
+          "name": "message",
+          "type": "String"
+        },
+        {
+          "name": "status",
+          "type": "String"
+        }
+      ],
+      "entity": "Pagamento",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "UpdateStock",
+      "input": [
+        {
+          "name": "productId",
+          "type": "Long"
+        },
+        {
+          "name": "quantity",
+          "type": "Integer"
+        }
+      ],
+      "output": [
+        {
+          "name": "newStockQuantity",
+          "type": "Integer"
+        }
+      ],
+      "entity": "Produto",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "GenerateOrderInvoice",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        }
+      ],
+      "output": [
+        {
+          "name": "invoiceNumber",
+          "type": "String"
+        },
+        {
+          "name": "generatedAt",
+          "type": "DateTime"
+        }
+      ],
+      "entity": "Pedido",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "GetOrderSummary",
+      "input": [
+        {
+          "name": "orderId",
+          "type": "Long"
+        }
+      ],
+      "output": [
+        {
+          "name": "totalItems",
+          "type": "Integer"
+        },
+        {
+          "name": "totalAmount",
+          "type": "Double"
+        },
+        {
+          "name": "status",
+          "type": "String"
+        }
+      ],
+      "entity": "Pedido",
+      "exposeInBackoffice": false
     }
   ],
   "entities": [
     {
       "name": "Users",
       "attributes": [
-        { "name": "id", "type": "Long", "constraints": ["primary_key"] },
-        { "name": "username", "type": "String", "constraints": ["unique"] },
-        { "name": "password", "type": "String" },
-        { "name": "role", "type": "Enum" },
-        { "name": "enabled", "type": "Boolean", "default": true }
+        {
+          "name": "id",
+          "type": "Long",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "username",
+          "type": "String",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "password",
+          "type": "String"
+        },
+        {
+          "name": "role",
+          "type": "Enum"
+        },
+        {
+          "name": "enabled",
+          "type": "Boolean",
+          "default": true
+        }
       ],
       "relations": [
-        { "target": "Cliente", "type": "1:1", "required": false, "cascade": "restrict" },
-        { "target": "Fornecedor", "type": "1:1", "required": false, "cascade": "restrict" }
+        {
+          "target": "Fornecedor",
+          "type": "1:1",
+          "required": false,
+          "cascade": "restrict"
+        },
+        {
+          "target": "Cliente",
+          "type": "1:1",
+          "required": false,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": [],
+      "behaviors": [
+        "soft_delete"
+      ],
       "api": {
-        "endpoints": ["crud"],
+        "endpoints": [
+          "crud"
+        ],
         "auth": "required",
-        "roles": ["admin"]
+        "roles": [
+          "admin"
+        ]
       }
     },
     {
       "name": "Cliente",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "name", "type": "string", "constraints": ["required", "min:3", "max_length:100"] },
-        { "name": "phone", "type": "string", "constraints": ["max_length:20"] },
-        { "name": "document", "type": "string", "constraints": ["unique", "max_length:20"] }
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required",
+            "min:3",
+            "max_length:100"
+          ]
+        },
+        {
+          "name": "phone",
+          "type": "string",
+          "constraints": [
+            "max_length:20"
+          ]
+        },
+        {
+          "name": "document",
+          "type": "string",
+          "constraints": [
+            "unique",
+            "max_length:20"
+          ]
+        }
       ],
       "relations": [
-        { "target": "Pedido", "type": "1:N", "required": false, "cascade": "restrict" },
-        { "target": "Users", "type": "1:1", "required": false, "cascade": "restrict" }
+        {
+          "target": "Users",
+          "type": "1:1",
+          "required": false,
+          "cascade": "restrict"
+        },
+        {
+          "target": "Pedido",
+          "type": "1:N",
+          "required": false,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": ["soft_delete"],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "filter_by_date_range",
+          "bulk_delete",
+          "import_csv",
+          "export_csv",
+          "bulk_create",
+          "search",
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     },
     {
       "name": "Fornecedor",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "company_name", "type": "string", "constraints": ["required", "max_length:150"] },
-        { "name": "contact_name", "type": "string", "constraints": ["max_length:100"] },
-        { "name": "email", "type": "string", "constraints": ["max_length:150"] },
-        { "name": "phone", "type": "string", "constraints": ["max_length:20"] }
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "company_name",
+          "type": "string",
+          "constraints": [
+            "required",
+            "max_length:150"
+          ]
+        },
+        {
+          "name": "contact_name",
+          "type": "string",
+          "constraints": [
+            "max_length:100"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "constraints": [
+            "max_length:150"
+          ]
+        },
+        {
+          "name": "phone",
+          "type": "string",
+          "constraints": [
+            "max_length:20"
+          ]
+        }
       ],
       "relations": [
-        { "target": "Produto", "type": "1:N", "required": false, "cascade": "restrict" },
-        { "target": "Users", "type": "1:1", "required": false, "cascade": "restrict" }
+        {
+          "target": "Users",
+          "type": "1:1",
+          "required": false,
+          "cascade": "restrict"
+        },
+        {
+          "target": "Produto",
+          "type": "1:N",
+          "required": false,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": ["soft_delete"],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "bulk_create",
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     },
     {
       "name": "Produto",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "name", "type": "string", "constraints": ["required", "max_length:120"] },
-        { "name": "description", "type": "text" },
-        { "name": "price", "type": "number", "constraints": ["required", "min:0"] },
-        { "name": "stock_quantity", "type": "number", "constraints": ["required", "min:0"] },
-        { "name": "active", "type": "boolean", "constraints": ["required"] }
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required",
+            "max_length:120"
+          ]
+        },
+        {
+          "name": "description",
+          "type": "text"
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        },
+        {
+          "name": "stock_quantity",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "constraints": [
+            "required"
+          ]
+        }
       ],
       "relations": [
-        { "target": "Fornecedor", "type": "N:1", "required": true, "cascade": "restrict" },
-        { "target": "PedidoItem", "type": "1:N", "required": false, "cascade": "restrict" }
+        {
+          "target": "PedidoItem",
+          "type": "1:N",
+          "required": true,
+          "cascade": "restrict"
+        },
+        {
+          "target": "Fornecedor",
+          "type": "N:1",
+          "required": false,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": ["soft_delete"],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     },
     {
       "name": "Pedido",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "order_date", "type": "datetime", "constraints": ["required"] },
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "order_date",
+          "type": "datetime",
+          "constraints": [
+            "required"
+          ]
+        },
         {
           "name": "status",
           "type": "enum",
-          "constraints": ["required"],
-          "values": ["pending", "paid", "shipped", "delivered", "cancelled"]
+          "constraints": [
+            "required"
+          ],
+          "values": [
+            "pending",
+            "paid",
+            "shipped",
+            "delivered",
+            "cancelled"
+          ]
         },
-        { "name": "total_amount", "type": "number", "constraints": ["required", "min:0"] }
+        {
+          "name": "total_amount",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        }
       ],
       "relations": [
-        { "target": "Cliente", "type": "N:1", "required": true, "cascade": "restrict" },
-        { "target": "PedidoItem", "type": "1:N", "required": false, "cascade": "cascade" },
-        { "target": "Pagamento", "type": "1:N", "required": false, "cascade": "restrict" }
+        {
+          "target": "Pagamento",
+          "type": "1:N",
+          "required": true,
+          "cascade": "restrict"
+        },
+        {
+          "target": "PedidoItem",
+          "type": "1:N",
+          "required": true,
+          "cascade": "cascade"
+        },
+        {
+          "target": "Cliente",
+          "type": "N:1",
+          "required": false,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": ["soft_delete"],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     },
     {
       "name": "PedidoItem",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "quantity", "type": "number", "constraints": ["required", "min:1"] },
-        { "name": "unit_price", "type": "number", "constraints": ["required", "min:0"] },
-        { "name": "subtotal", "type": "number", "constraints": ["required", "min:0"] }
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:1"
+          ]
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        },
+        {
+          "name": "subtotal",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        }
       ],
       "relations": [
-        { "target": "Pedido", "type": "N:1", "required": true, "cascade": "cascade" },
-        { "target": "Produto", "type": "N:1", "required": true, "cascade": "restrict" }
+        {
+          "target": "Pedido",
+          "type": "N:1",
+          "required": true,
+          "cascade": "cascade"
+        },
+        {
+          "target": "Produto",
+          "type": "N:1",
+          "required": true,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": [],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     },
     {
       "name": "Pagamento",
       "attributes": [
-        { "name": "id", "type": "number", "constraints": ["primary_key", "auto_increment"] },
-        { "name": "payment_date", "type": "datetime", "constraints": ["required"] },
-        { "name": "amount", "type": "number", "constraints": ["required", "min:0"] },
+        {
+          "name": "id",
+          "type": "number",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "payment_date",
+          "type": "datetime",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "constraints": [
+            "required",
+            "min:0"
+          ]
+        },
         {
           "name": "method",
           "type": "enum",
-          "constraints": ["required"],
-          "values": ["credit_card", "debit_card", "pix", "bank_transfer", "cash"]
+          "constraints": [
+            "required"
+          ],
+          "values": [
+            "credit_card",
+            "debit_card",
+            "pix",
+            "bank_transfer",
+            "cash"
+          ]
         },
         {
           "name": "status",
           "type": "enum",
-          "constraints": ["required"],
-          "values": ["pending", "approved", "failed", "refunded"]
+          "constraints": [
+            "required"
+          ],
+          "values": [
+            "pending",
+            "approved",
+            "failed",
+            "refunded"
+          ]
         }
       ],
       "relations": [
-        { "target": "Pedido", "type": "N:1", "required": true, "cascade": "restrict" }
+        {
+          "target": "Pedido",
+          "type": "N:1",
+          "required": true,
+          "cascade": "restrict"
+        }
       ],
-      "behaviors": [],
-      "api": { "endpoints": [], "auth": "required", "roles": ["admin"] }
+      "behaviors": [
+        "soft_delete"
+      ],
+      "api": {
+        "endpoints": [
+          "crud"
+        ],
+        "auth": "required",
+        "roles": [
+          "admin"
+        ]
+      }
     }
   ]
 }
