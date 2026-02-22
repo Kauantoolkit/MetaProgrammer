@@ -343,7 +343,9 @@ export default function Home() {
   };
 
   const handleSelectEntity = (entity) => {
-    setSelectedEntity(entity);
+    // Create a new object reference to ensure React properly re-renders EntityEditor
+    // with the correct entity data (behaviors, API config, etc.)
+    setSelectedEntity({ ...entity });
     setSelectedFunctionality(null);
   };
 

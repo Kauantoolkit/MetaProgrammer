@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function Switch({ checked, onCheckedChange, className = "" }) {
   const [internalChecked, setInternalChecked] = useState(checked || false);
+
+  // Sincronizar o estado interno quando a prop 'checked' mudar
+  useEffect(() => {
+    setInternalChecked(checked || false);
+  }, [checked]);
 
   const toggle = () => {
     const newValue = !internalChecked;

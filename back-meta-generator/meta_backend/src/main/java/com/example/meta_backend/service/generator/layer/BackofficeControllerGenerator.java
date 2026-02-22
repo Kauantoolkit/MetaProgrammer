@@ -1,7 +1,10 @@
 package com.example.meta_backend.service.generator.layer;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
@@ -42,8 +45,9 @@ public class BackofficeControllerGenerator {
                 String name = (String) entity.get("name");
                 String pathName = name.toLowerCase();
 
+                // CORRIGIDO: Adicionado /list no mapping para corresponder aos links dos templates
                 sb.append(String.format(
-                    "    @GetMapping(\"/backoffice/%s\")\n" +
+                    "    @GetMapping(\"/backoffice/%s/list\")\n" +
                     "    public String list%s(Model model) {\n" +
                     "        return \"backoffice/%s/list\";\n" +
                     "    }\n\n",
