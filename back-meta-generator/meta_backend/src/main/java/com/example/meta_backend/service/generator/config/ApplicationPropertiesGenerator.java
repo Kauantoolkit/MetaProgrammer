@@ -7,10 +7,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ApplicationPropertiesGenerator {
-    public void generateApplicationProperties(String projectName, String adminPassword) throws IOException {
+    public void generateApplicationProperties(String projectName, String adminPassword, String javaClassName) throws IOException {
         String baseDir = projectName + "/src/main/resources/";
         Files.createDirectories(Paths.get(baseDir));
 
+        // Use javaClassName for spring.application.name (no hyphens allowed)
         String props = """
             spring.application.name=%s
             server.port=8081
@@ -27,7 +28,7 @@ public class ApplicationPropertiesGenerator {
             
             # Admin user configuration
             admin.password=%s
-            """.formatted(projectName, projectName.toLowerCase(), adminPassword);
+            """.formatted(javaClassName, javaClassName.toLowerCase(), adminPassword);
 
         Files.writeString(Paths.get(baseDir + "application.properties"), props);
     }

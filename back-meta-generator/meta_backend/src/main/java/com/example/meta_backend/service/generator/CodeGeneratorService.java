@@ -93,8 +93,11 @@ public class CodeGeneratorService {
             // Generate random admin password
             String adminPassword = generateRandomPassword(16);
             
+            // Derive Java-safe class name from app name
+            String javaClassName = AppNameUtils.toClassName(appName);
+            
             generateProjectStructure(appName);
-            generateCoreFiles(appName, adminPassword);
+            generateCoreFiles(appName, adminPassword, javaClassName);
 
             String baseDir = buildBaseDir(appName);
 
@@ -116,7 +119,9 @@ public class CodeGeneratorService {
             System.out.println("  Admin Password: " + adminPassword);
             System.out.println("=".repeat(60));
             System.out.println("  IMPORTANT: Save this password securely!");
-            System.out.println("  It will not be displayed again.\n");
+            System.out.println("  It will not be displayed again.");
+            System.out.println("  The admin user will be created automatically");
+            System.out.println("  when you run the application for the first time.\n");
             System.out.println("=".repeat(60) + "\n");
 
         } catch (IOException e) {
@@ -139,11 +144,11 @@ public class CodeGeneratorService {
         baseStructureGenerator.createBaseStructure(appName);
     }
 
-    private void generateCoreFiles(String appName, String adminPassword) throws IOException {
+    private void generateCoreFiles(String appName, String adminPassword, String javaClassName) throws IOException {
         pomGenerator.generatePom(appName);
         mainClassGenerator.generateMainClass(appName);
         gitignoreGenerator.generateGitignore(appName);
-        appPropsGenerator.generateApplicationProperties(appName, adminPassword);
+        appPropsGenerator.generateApplicationProperties(appName, adminPassword, javaClassName);
     }
 
 

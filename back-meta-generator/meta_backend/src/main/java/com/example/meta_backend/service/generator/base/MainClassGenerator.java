@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class MainClassGenerator {
     public void generateMainClass(String projectName) throws IOException {
         String baseDir = projectName + "/src/main/java/com/metagen/backend/generated/";
-    String className = toCamelCase(projectName) + "Application";
+    String className = AppNameUtils.toClassName(projectName) + "Application";
 
     String content = """
         package com.metagen.backend.generated;
@@ -32,12 +32,5 @@ public class MainClassGenerator {
 }
 
 
-    private String toCamelCase(String s) {
-        String[] parts = s.split("_");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            sb.append(part.substring(0, 1).toUpperCase()).append(part.substring(1).toLowerCase());
-        }
-        return sb.toString();
-    }
+// Using AppNameUtils.toClassName() instead - handles both hyphens and underscores
 }

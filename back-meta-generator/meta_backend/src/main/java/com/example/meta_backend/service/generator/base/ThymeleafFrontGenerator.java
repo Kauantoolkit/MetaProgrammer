@@ -234,95 +234,17 @@ public class ThymeleafFrontGenerator {
         StringBuilder sb = new StringBuilder();
         String entityPath = entityName.toLowerCase();
 
+        // CORRIGIDO: Agora usa o layout base para carregar o CSS corretamente
         sb.append("<!DOCTYPE html>\n")
-          .append("<html xmlns:th=\"http://www.thymeleaf.org\">\n")
+          .append("<html xmlns:th=\"http://www.thymeleaf.org\" xmlns:layout=\"http://www.ultraq.net.nz/thymeleaf/layout\">\n")
           .append("<head>\n")
           .append("<meta charset=\"UTF-8\">\n")
           .append(String.format("<title>%s List</title>\n", entityName))
-          .append("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\"/>\n")
-          .append("<style>\n")
-          .append("body {\n")
-          .append("    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n")
-          .append("    min-height: 100vh;\n")
-          .append("    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n")
-          .append("}\n")
-          .append(".sidebar {\n")
-          .append("    background: rgba(255, 255, 255, 0.95);\n")
-          .append("    backdrop-filter: blur(10px);\n")
-          .append("}\n")
-          .append(".content-area {\n")
-          .append("    background: rgba(255, 255, 255, 0.95);\n")
-          .append("    border-radius: 15px;\n")
-          .append("    box-shadow: 0 10px 30px rgba(0,0,0,0.3);\n")
-          .append("    margin: 20px;\n")
-          .append("    padding: 30px;\n")
-          .append("    backdrop-filter: blur(10px);\n")
-          .append("}\n")
-          .append("h2 {\n")
-          .append("    color: #333;\n")
-          .append("    font-weight: 700;\n")
-          .append("    margin-bottom: 30px;\n")
-          .append("}\n")
-          .append(".alert-info {\n")
-          .append("    background: rgba(102, 126, 234, 0.1);\n")
-          .append("    border: 1px solid #667eea;\n")
-          .append("    border-radius: 10px;\n")
-          .append("    padding: 20px;\n")
-          .append("    margin-bottom: 20px;\n")
-          .append("}\n")
-          .append(".table {\n")
-          .append("    background: white;\n")
-          .append("    border-radius: 10px;\n")
-          .append("    overflow: hidden;\n")
-          .append("    box-shadow: 0 5px 15px rgba(0,0,0,0.1);\n")
-          .append("}\n")
-          .append(".table thead th {\n")
-          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
-          .append("    color: white;\n")
-          .append("    border: none;\n")
-          .append("    font-weight: 600;\n")
-          .append("}\n")
-          .append(".table tbody tr:hover {\n")
-          .append("    background: rgba(102, 126, 234, 0.1);\n")
-          .append("}\n")
-          .append(".btn-primary {\n")
-          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 25px;\n")
-          .append("    padding: 10px 25px;\n")
-          .append("    font-weight: 600;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-primary:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);\n")
-          .append("}\n")
-          .append(".btn-warning {\n")
-          .append("    background: linear-gradient(45deg, #f093fb, #f5576c);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 20px;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-warning:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);\n")
-          .append("}\n")
-          .append(".btn-danger {\n")
-          .append("    background: linear-gradient(45deg, #ff6b6b, #ee5a24);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 20px;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-danger:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);\n")
-          .append("}\n")
-          .append("</style>\n")
           .append("</head>\n")
           .append("<body>\n")
-          .append("<div class=\"d-flex\">\n")
-          .append("<div th:replace=\"fragments/sidebar :: sidebar\"></div>\n")
-          .append("<div class=\"content-area\">\n")
+          // CORRIGIDO: Usa layout:decorate para estender o layout base
+          .append("<div layout:decorate=\"~{layouts/base}\">\n")
+          .append("<div layout:fragment=\"content\">\n")
           .append(String.format("<h2>Lista de %s</h2>\n", entityName));
         
         // Mensagem para entidades sem CRUD
@@ -360,49 +282,9 @@ public class ThymeleafFrontGenerator {
         </tr>
     </tbody>
     </table>
+    <div th:insert="~{backoffice/%s/addEditDialog :: modal}"></div>
     </div>
-    <div th:insert="~{%s/addEditDialog :: modal}"></div>
-        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Função para abrir modal e preencher campos via REST
-        function openEditModal(entity, id) {
-            fetch('/api/' + entity + '/' + id)
-                .then(res => res.json())
-                .then(data => {
-                    const form = document.querySelector('#addEditModal-' + entity + ' form');
-                    Object.keys(data).forEach(key => {
-                        if(form[key]) form[key].value = data[key];
-                    });
-                    new bootstrap.Modal(document.getElementById('addEditModal-' + entity)).show();
-                });
-        }
-
-        // Deletar item via REST
-        function deleteItem(entity, id) {
-            if(confirm('Deseja realmente deletar este registro?')) {
-                fetch('/api/' + entity + '/' + id, { method: 'DELETE' })
-                    .then(() => location.reload());
-            }
-        }
-
-        // Salvar via REST (novo ou editar)
-        function submitForm(entity) {
-            const form = document.querySelector('#form-' + entity);
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            fetch('/api/' + entity, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .then(() => location.reload());
-        }
-    </script>
-    </body>
-    </html>
     """, entityPath, entityPath, entityPath));
         } else {
             sb.append("""
@@ -410,13 +292,12 @@ public class ThymeleafFrontGenerator {
     </tbody>
     </table>
     </div>
-        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    </body>
-    </html>
     """);
         }
+
+        // Fecha os divs do layout:decorate e layout:fragment
+        sb.append("</div>\n</div>\n");
 
         return sb.toString();
     }
