@@ -26,6 +26,9 @@ public class EntityGenerator {
         boolean hasTimestamps = behaviors != null && behaviors.contains("timestamps");
         boolean hasSoftDelete = behaviors != null && behaviors.contains("soft_delete");
         boolean hasVersioning = behaviors != null && behaviors.contains("versioning");
+        boolean hasDateAttributes = attrs != null && attrs.stream()
+                .map(attr -> attr == null ? null : (String) attr.get("type"))
+                .anyMatch(type -> type != null && type.equalsIgnoreCase("date"));
 
         Path entityPath = Paths.get(baseDir + "entity/" + className + ".java");
         Files.createDirectories(entityPath.getParent());
@@ -36,16 +39,13 @@ public class EntityGenerator {
           .append("import jakarta.validation.constraints.*;\n")
           .append("import lombok.*;\n");
         
-        if (hasTimestamps || hasSoftDelete) {
+        if (hasTimestamps || hasSoftDelete || hasDateAttributes) {
             sb.append("import java.time.LocalDateTime;\n");
         }
         if (hasTimestamps) {
             sb.append("import org.springframework.data.annotation.CreatedDate;\n")
               .append("import org.springframework.data.annotation.LastModifiedDate;\n")
               .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n");
-        }
-        if (hasVersioning) {
-            sb.append("import org.springframework.data.annotation.Version;\n");
         }
         
         sb.append("import java.util.*;\n\n")

@@ -3,6 +3,7 @@ package com.example.meta_backend.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,14 +24,19 @@ public class GenerationController {
     }
 
    @PostMapping
-   public String generate(@RequestBody Map<String, Object> payload) {
-       String appName = (String) payload.get("appName");
-       @SuppressWarnings("unchecked")
-       List<Map<String, Object>> entities = (List<Map<String, Object>>) payload.get("entities");
-       @SuppressWarnings("unchecked")
-       List<Map<String, Object>> functionalities = (List<Map<String, Object>>) payload.getOrDefault("functionalities", List.of());
-       generatorService.generateApplication(appName, entities, functionalities);
-       return "Código gerado em /" + appName + "/";
+   public ResponseEntity<String> generate(@RequestBody Map<String, Object> payload) {
+       try {
+           String appName = (String) payload.get("appName");
+           @SuppressWarnings("unchecked")
+           List<Map<String, Object>> entities = (List<Map<String, Object>>) payload.getOrDefault("entities", List.of());
+           @SuppressWarnings("unchecked")
+           List<Map<String, Object>> functionalities = (List<Map<String, Object>>) payload.getOrDefault("functionalities", List.of());
+
+           generatorService.generateApplication(appName, entities, functionalities);
+           return ResponseEntity.ok("Código gerado em /" + appName + "/");
+       } catch (IllegalArgumentException e) {
+           return ResponseEntity.badRequest().body(e.getMessage());
+       }
    }
 }
 

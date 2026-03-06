@@ -90,31 +90,35 @@ public class CodeGeneratorService {
 
     public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities) {
         try {
+            String validatedAppName = validateAppName(appName);
+            List<Map<String, Object>> safeEntities = entities == null ? List.of() : entities;
+            List<Map<String, Object>> safeFunctionalities = functionalities == null ? List.of() : functionalities;
+
             // Generate random admin password
             String adminPassword = generateRandomPassword(16);
-            
-            // Derive Java-safe class name from app name
-            String javaClassName = AppNameUtils.toClassName(appName);
-            
-            generateProjectStructure(appName);
-            generateCoreFiles(appName, adminPassword, javaClassName);
 
-            String baseDir = buildBaseDir(appName);
+            // Derive Java-safe class name from app name
+            String javaClassName = AppNameUtils.toClassName(validatedAppName);
+
+            generateProjectStructure(validatedAppName);
+            generateCoreFiles(validatedAppName, adminPassword, javaClassName);
+
+            String baseDir = buildBaseDir(validatedAppName);
 
             generateSecurityUsers(baseDir);
-            generateDomainLayers(baseDir, entities, appName);
-            flywayMigrationGenerator.generateFlywayMigration(appName, entities);
-            generateFunctionalities(baseDir, functionalities);
+            generateDomainLayers(baseDir, safeEntities, validatedAppName);
+            flywayMigrationGenerator.generateFlywayMigration(validatedAppName, safeEntities);
+            generateFunctionalities(baseDir, safeFunctionalities);
             generateInfrastructure(baseDir);
-            generateFrontend(entities, appName);
-            generateBackoffice(entities, appName);
+            generateFrontend(safeEntities, validatedAppName);
+            generateBackoffice(safeEntities, validatedAppName);
             generateAdminInitializer(baseDir);
 
             // Log the admin password prominently
             System.out.println("\n" + "=".repeat(60));
             System.out.println("  APPLICATION GENERATED SUCCESSFULLY");
             System.out.println("=".repeat(60));
-            System.out.println("  Project: " + appName);
+            System.out.println("  Project: " + validatedAppName);
             System.out.println("  Admin Username: admin");
             System.out.println("  Admin Password: " + adminPassword);
             System.out.println("=".repeat(60));
@@ -138,6 +142,19 @@ public class CodeGeneratorService {
         }
         return sb.toString();
     }
+
+    private String validateAppName(String appName) {
+        if (appName == null || appName.isBlank()) {
+            throw new IllegalArgumentException("appName é obrigatório.");
+        }
+
+        if (!appName.matches("^[a-zA-Z0-9_-]+$")) {
+            throw new IllegalArgumentException("appName inválido. Use apenas letras, números, hífen e underscore.");
+        }
+
+        return appName;
+    }
+
 
 
     private void generateProjectStructure(String appName) throws IOException {
