@@ -1,21 +1,31 @@
 package com.example.meta_backend.service.generator.entity;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class EntityGenerator {
 
     public void generateEntity(String baseDir,
                                String name,
                                List<Map<String, Object>> attrs,
                                List<Map<String, Object>> rels,
+                               List<String> behaviors,
                                String appName) throws IOException {
 
         if (name == null || name.isBlank()) return;
 
         String className = sanitizeClassName(name);
         String tableName = sanitizeTableName(name);
+        boolean hasTimestamps = behaviors != null && behaviors.contains("timestamps");
+        boolean hasSoftDelete = behaviors != null && behaviors.contains("soft_delete");
+        boolean hasVersioning = behaviors != null && behaviors.contains("versioning");
 
         Path entityPath = Paths.get(baseDir + "entity/" + className + ".java");
         Files.createDirectories(entityPath.getParent());
@@ -24,14 +34,36 @@ public class EntityGenerator {
         sb.append("package com.metagen.backend.generated.entity;\n\n")
           .append("import jakarta.persistence.*;\n")
           .append("import jakarta.validation.constraints.*;\n")
-          .append("import org.springframework.data.annotation.CreatedDate;\n")
-          .append("import org.springframework.data.annotation.LastModifiedDate;\n")
-          .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n")
-          .append("import java.time.LocalDateTime;\n")
-          .append("import java.util.*;\n\n")
-          .append("@Entity\n@Table(name = \"" + tableName + "\")\n")
-          .append("@EntityListeners(AuditingEntityListener.class)\n")
-          .append("public class " + className + " {\n\n");
+          .append("import lombok.*;\n");
+        
+        if (hasTimestamps || hasSoftDelete) {
+            sb.append("import java.time.LocalDateTime;\n");
+        }
+        if (hasTimestamps) {
+            sb.append("import org.springframework.data.annotation.CreatedDate;\n")
+              .append("import org.springframework.data.annotation.LastModifiedDate;\n")
+              .append("import org.springframework.data.jpa.domain.support.AuditingEntityListener;\n");
+        }
+        if (hasVersioning) {
+            sb.append("import org.springframework.data.annotation.Version;\n");
+        }
+        
+        sb.append("import java.util.*;\n\n")
+          .append("@Data\n")
+          .append("@Entity\n@Table(name = \"" + tableName + "\")\n");
+        
+        if (hasTimestamps) {
+            sb.append("@EntityListeners(AuditingEntityListener.class)\n");
+        }
+        
+        if (hasSoftDelete) {
+            sb.append("@org.hibernate.annotations.SQLDelete(sql = \"UPDATE " + tableName + " SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?\")\n")
+              .append("@org.hibernate.annotations.SQLRestriction(\"deleted_at IS NULL\")\n");
+        }
+        
+        sb.append("public class " + className + " {\n\n");
+
+
 
         boolean hasId = false;
 
@@ -39,11 +71,12 @@ public class EntityGenerator {
             for (Map<String, Object> attr : attrs) {
                 if (attr == null) continue;
 
-                String field = (String) attr.get("name");
-                if (field == null || field.isBlank()) continue;
+                String originalFieldName = (String) attr.get("name");
+                if (originalFieldName == null || originalFieldName.isBlank() || originalFieldName.equalsIgnoreCase("id")) continue;
 
-                field = sanitizeFieldName(field);
+                String field = sanitizeFieldName(originalFieldName);
                 String type = mapType((String) attr.get("type"));
+                String columnName = originalFieldName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
 
                 if (field.equalsIgnoreCase("id")) {
                     hasId = true;
@@ -54,9 +87,11 @@ public class EntityGenerator {
                 }
 
                 sb.append("    @NotNull\n")
+                  .append("    @Column(name = \"").append(columnName).append("\")\n")
                   .append("    private ").append(type).append(" ").append(field).append(";\n\n");
             }
         }
+
 
         if (!hasId) {
             sb.append("    @Id\n")
@@ -70,49 +105,87 @@ public class EntityGenerator {
 
                 String type = (String) rel.get("type");
                 String target = (String) rel.get("target");
-                String field = (String) rel.get("name");
 
-                if (type == null || target == null || field == null) continue;
+                if (type == null || target == null) continue;
+
+                // Convert relation type from "1:1", "1:N", "N:1", "N:N" to JPA format
+                type = convertRelationType(type);
 
                 target = sanitizeClassName(target);
-                field = sanitizeFieldName(field);
 
+                // Deriva o nome do campo a partir do target se não vier explícito no JSON
+                String rawField = (String) rel.get("name");
+                String field;
+                if (rawField != null && !rawField.isBlank()) {
+                    field = sanitizeFieldName(rawField);
+                } else {
+                    // N:1 / 1:1 → campo singular (conversionType); 1:N / N:N → plural (conversionTypes)
+                    String singular = Character.toLowerCase(target.charAt(0)) + target.substring(1);
+                    boolean isCollection = type.equalsIgnoreCase("ONETOMANY") || type.equalsIgnoreCase("MANYTOMANY");
+                    field = isCollection ? singular + "s" : singular;
+                }
+
+                String targetTableName = target.toLowerCase();
+                
                 switch (type.toLowerCase()) {
-                    case "onetoone" ->
+                    case "onetoone" -> {
+                        String fkColumnName = targetTableName + "_id";
                         sb.append("    @OneToOne\n")
+                          .append("    @JoinColumn(name = \"").append(fkColumnName).append("\")\n")
                           .append("    private ").append(target).append(" ").append(field).append(";\n\n");
+                    }
 
                     case "onetomany" ->
                         sb.append("    @OneToMany\n")
                           .append("    private List<").append(target).append("> ").append(field)
                           .append(" = new ArrayList<>();\n\n");
 
-                    case "manytoone" ->
+                    case "manytoone" -> {
+                        String fkColumnName = targetTableName + "_id";
                         sb.append("    @ManyToOne\n")
+                          .append("    @JoinColumn(name = \"").append(fkColumnName).append("\")\n")
                           .append("    private ").append(target).append(" ").append(field).append(";\n\n");
+                    }
 
                     case "manytomany" ->
                         sb.append("    @ManyToMany\n")
                           .append("    private List<").append(target).append("> ").append(field)
                           .append(" = new ArrayList<>();\n\n");
                 }
+
             }
         }
 
-        sb.append("    @CreatedDate\n")
-          .append("    @Column(updatable = false)\n")
-          .append("    private LocalDateTime createdAt;\n\n")
-          .append("    @LastModifiedDate\n")
-          .append("    private LocalDateTime updatedAt;\n\n");
+
+        if (hasTimestamps) {
+            sb.append("    @CreatedDate\n")
+              .append("    @Column(updatable = false)\n")
+              .append("    private LocalDateTime createdAt;\n\n")
+              .append("    @LastModifiedDate\n")
+              .append("    private LocalDateTime updatedAt;\n\n");
+        }
+
+        if (hasSoftDelete) {
+            sb.append("    @Column(name = \"deleted_at\")\n")
+              .append("    private LocalDateTime deletedAt;\n\n");
+        }
+
+        if (hasVersioning) {
+            sb.append("    @Version\n")
+              .append("    @Column(name = \"version\")\n")
+              .append("    private Long version;\n\n");
+        }
 
         sb.append("}\n");
+
+
 
         Files.writeString(entityPath, sb.toString());
     }
 
-    public void generateUserEntity(String baseDir) throws IOException {
-        Path userPath = Paths.get(baseDir + "entity/User.java");
-        Files.createDirectories(userPath.getParent());
+    public void generateUsersEntity(String baseDir) throws IOException {
+        Path usersPath = Paths.get(baseDir + "entity/Users.java");
+        Files.createDirectories(usersPath.getParent());
 
         String userEntity = """
             package com.metagen.backend.generated.entity;
@@ -122,7 +195,7 @@ public class EntityGenerator {
 
             @Entity
             @Table(name = "users")
-            public class User {
+            public class Users {
 
                 @Id
                 @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -152,7 +225,7 @@ public class EntityGenerator {
             }
             """;
 
-        Files.writeString(userPath, userEntity);
+        Files.writeString(usersPath, userEntity);
     }
 
     private String mapType(String type) {
@@ -175,12 +248,40 @@ public class EntityGenerator {
     }
 
     private String sanitizeFieldName(String name) {
-        String cleaned = name.replaceAll("[^a-zA-Z0-9]", "");
-        if (cleaned.isBlank()) return "field";
-        return Character.toLowerCase(cleaned.charAt(0)) + cleaned.substring(1);
+        if (name == null || name.isBlank()) return "field";
+        // Converte snake_case / kebab-case para camelCase
+        String[] parts = name.split("[_\\-\\s]+");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].replaceAll("[^a-zA-Z0-9]", "");
+            if (part.isBlank()) continue;
+            if (i == 0) {
+                sb.append(Character.toLowerCase(part.charAt(0))).append(part.substring(1));
+            } else {
+                sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
+        }
+        String result = sb.toString();
+        return result.isBlank() ? "field" : result;
     }
 
     private String sanitizeTableName(String name) {
         return name.toLowerCase().replaceAll("[^a-z0-9_]", "_");
+    }
+
+    /**
+     * Converts relation type notation from "1:1", "1:N", "N:1", "N:N" to JPA format
+     * "onetoone", "onetomany", "manytoone", "manytomany"
+     */
+    private String convertRelationType(String type) {
+        if (type == null) return null;
+        
+        return switch (type.toUpperCase()) {
+            case "1:1" -> "ONETOONE";
+            case "1:N" -> "ONETOMANY";
+            case "N:1" -> "MANYTOONE";
+            case "N:N" -> "MANYTOMANY";
+            default -> type.toUpperCase();
+        };
     }
 }

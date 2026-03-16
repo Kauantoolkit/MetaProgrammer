@@ -3,6 +3,9 @@ package com.example.meta_backend.service.generator.security;
 import java.io.IOException;
 import java.nio.file.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class SecurityGenerator {
 
     public void generateSecurityClasses(String baseDir) throws IOException {
@@ -22,8 +25,8 @@ public class SecurityGenerator {
             import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
             import org.springframework.security.crypto.password.PasswordEncoder;
             import org.springframework.beans.factory.annotation.Autowired;
-            import com.metagen.backend.generated.repository.UserRepository;
-            import com.metagen.backend.generated.entity.User;
+            import com.metagen.backend.generated.repository.UsersRepository;
+            import com.metagen.backend.generated.entity.Users;
             import jakarta.servlet.ServletException;
             import jakarta.servlet.http.HttpServletRequest;
             import jakarta.servlet.http.HttpServletResponse;
@@ -34,7 +37,7 @@ public class SecurityGenerator {
             public class SecurityConfig {
 
                 @Autowired
-                private UserRepository userRepository;
+                private UsersRepository usersRepository;
 
                 @Bean
                 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -60,16 +63,16 @@ public class SecurityGenerator {
                 @Bean
                 public UserDetailsService userDetailsService() {
                     return username -> {
-                        Optional<User> userOpt = userRepository.findByUsername(username);
-                        if (userOpt.isPresent()) {
-                            User user = userOpt.get();
+                        Optional<Users> usersOpt = usersRepository.findByUsername(username);
+                        if (usersOpt.isPresent()) {
+                            Users users = usersOpt.get();
                             return org.springframework.security.core.userdetails.User.builder()
-                                .username(user.getUsername())
-                                .password(user.getPassword())
-                                .roles(user.getRoles().split(","))
+                                .username(users.getUsername())
+                                .password(users.getPassword())
+                                .roles(users.getRoles().split(","))
                                 .build();
                         }
-                        throw new UsernameNotFoundException("User not found: " + username);
+                        throw new UsernameNotFoundException("Users not found: " + username);
                     };
                 }
 

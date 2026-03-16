@@ -1,8 +1,12 @@
 package com.example.meta_backend.service.generator.base;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class PomGenerator {
 
     private static final String BASE_DIR = "generated_app/";
@@ -83,6 +87,13 @@ public class PomGenerator {
                     <dependency>
                         <groupId>org.flywaydb</groupId>
                         <artifactId>flyway-core</artifactId>
+                    </dependency>
+
+                    <!-- Lombok -->
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <optional>true</optional>
                     </dependency>
 
                     <!-- Testes -->

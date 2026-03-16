@@ -11,11 +11,15 @@ import com.example.meta_backend.service.generator.entity.*;
 import com.example.meta_backend.service.generator.layer.*;
 import com.example.meta_backend.service.generator.config.*;
 import com.example.meta_backend.service.generator.security.*;
+import com.example.meta_backend.service.generator.functionality.*;
+
+import java.security.SecureRandom;
 
 @Service
 public class CodeGeneratorService {
 
     private final BaseStructureGenerator baseStructureGenerator;
+    private final FlywayMigrationGenerator flywayMigrationGenerator;
     private final PomGenerator pomGenerator;
     private final MainClassGenerator mainClassGenerator;
     private final GitignoreGenerator gitignoreGenerator;
@@ -31,9 +35,16 @@ public class CodeGeneratorService {
     private final GlobalExceptionHandlerGenerator exceptionHandlerGenerator;
     private final ThymeleafFrontGenerator thymeleafGenerator;
     private final BackofficeControllerGenerator backofficeControllerGenerator;
+    private final AdminUserInitializerGenerator adminUserInitializerGenerator;
+
+    private final FunctionalityDtoGenerator functionalityDtoGenerator;
+    private final FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator;
+    private final FunctionalityServiceImplGenerator functionalityServiceImplGenerator;
+    private final FunctionalityControllerGenerator functionalityControllerGenerator;
 
     public CodeGeneratorService(
             BaseStructureGenerator baseStructureGenerator,
+            FlywayMigrationGenerator flywayMigrationGenerator,
             PomGenerator pomGenerator,
             MainClassGenerator mainClassGenerator,
             GitignoreGenerator gitignoreGenerator,
@@ -46,9 +57,16 @@ public class CodeGeneratorService {
             SecurityGenerator securityGenerator,
             GlobalExceptionHandlerGenerator exceptionHandlerGenerator,
             ThymeleafFrontGenerator thymeleafGenerator,
-            BackofficeControllerGenerator backofficeControllerGenerator
+            BackofficeControllerGenerator backofficeControllerGenerator,
+            AdminUserInitializerGenerator adminUserInitializerGenerator,
+            FunctionalityDtoGenerator functionalityDtoGenerator,
+            FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator,
+            FunctionalityServiceImplGenerator functionalityServiceImplGenerator,
+            FunctionalityControllerGenerator functionalityControllerGenerator
     ) {
+
         this.baseStructureGenerator = baseStructureGenerator;
+        this.flywayMigrationGenerator = flywayMigrationGenerator;
         this.pomGenerator = pomGenerator;
         this.mainClassGenerator = mainClassGenerator;
         this.gitignoreGenerator = gitignoreGenerator;
@@ -62,49 +80,95 @@ public class CodeGeneratorService {
         this.exceptionHandlerGenerator = exceptionHandlerGenerator;
         this.thymeleafGenerator = thymeleafGenerator;
         this.backofficeControllerGenerator = backofficeControllerGenerator;
+        this.adminUserInitializerGenerator = adminUserInitializerGenerator;
+        this.functionalityDtoGenerator = functionalityDtoGenerator;
+
+        this.functionalityServiceInterfaceGenerator = functionalityServiceInterfaceGenerator;
+        this.functionalityServiceImplGenerator = functionalityServiceImplGenerator;
+        this.functionalityControllerGenerator = functionalityControllerGenerator;
     }
 
-    public void generateApplication(String appName, List<Map<String, Object>> entities) {
+    public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities, boolean useAi) {
         try {
+            // Generate random admin password
+            String adminPassword = generateRandomPassword(16);
+
+            // Derive Java-safe class name from app name
+            String javaClassName = AppNameUtils.toClassName(appName);
+
             generateProjectStructure(appName);
-            generateCoreFiles(appName);
+            generateCoreFiles(appName, adminPassword, javaClassName);
 
             String baseDir = buildBaseDir(appName);
 
-            generateSecurityUser(baseDir);
+            generateSecurityUsers(baseDir);
             generateDomainLayers(baseDir, entities, appName);
+            flywayMigrationGenerator.generateFlywayMigration(appName, entities);
+            generateFunctionalities(baseDir, functionalities, entities, useAi);
             generateInfrastructure(baseDir);
             generateFrontend(entities, appName);
             generateBackoffice(entities, appName);
+            generateAdminInitializer(baseDir);
+
+            // Log the admin password prominently
+            System.out.println("\n" + "=".repeat(60));
+            System.out.println("  APPLICATION GENERATED SUCCESSFULLY");
+            System.out.println("=".repeat(60));
+            System.out.println("  Project: " + appName);
+            System.out.println("  Admin Username: admin");
+            System.out.println("  Admin Password: " + adminPassword);
+            System.out.println("=".repeat(60));
+            System.out.println("  IMPORTANT: Save this password securely!");
+            System.out.println("  It will not be displayed again.");
+            System.out.println("  The admin user will be created automatically");
+            System.out.println("  when you run the application for the first time.\n");
+            System.out.println("=".repeat(60) + "\n");
 
         } catch (IOException e) {
             throw new RuntimeException("Erro ao gerar aplicação: " + e.getMessage(), e);
         }
     }
+    
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
 
     private void generateProjectStructure(String appName) throws IOException {
         baseStructureGenerator.createBaseStructure(appName);
     }
 
-    private void generateCoreFiles(String appName) throws IOException {
+    private void generateCoreFiles(String appName, String adminPassword, String javaClassName) throws IOException {
         pomGenerator.generatePom(appName);
         mainClassGenerator.generateMainClass(appName);
         gitignoreGenerator.generateGitignore(appName);
-        appPropsGenerator.generateApplicationProperties(appName);
+        appPropsGenerator.generateApplicationProperties(appName, adminPassword, javaClassName);
     }
+
 
     private String buildBaseDir(String appName) {
         return appName + "/src/main/java/com/metagen/backend/generated/";
     }
 
-    private void generateSecurityUser(String baseDir) throws IOException {
-        entityGenerator.generateUserEntity(baseDir);
-        repositoryGenerator.generateUserRepository(baseDir);
+    private void generateSecurityUsers(String baseDir) throws IOException {
+        entityGenerator.generateUsersEntity(baseDir);
+        repositoryGenerator.generateUsersRepository(baseDir);
     }
 
     private void generateDomainLayers(String baseDir, List<Map<String, Object>> entities, String appName) throws IOException {
         for (Map<String, Object> entity : entities) {
             String name = (String) entity.get("name");
+            
+            //skippa pra n sobrescrever
+            if ("Users".equalsIgnoreCase(name)) {
+                continue;
+            }
 
             List<Map<String, Object>> attrs =
                     (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
@@ -112,7 +176,10 @@ public class CodeGeneratorService {
             List<Map<String, Object>> rels =
                     (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
 
-            entityGenerator.generateEntity(baseDir, name, attrs, rels, appName);
+            List<String> behaviors = (List<String>) entity.getOrDefault("behaviors", List.of());
+
+            entityGenerator.generateEntity(baseDir, name, attrs, rels, behaviors, appName);
+
             repositoryGenerator.generateRepository(baseDir, name);
             dtoGenerator.generateDTOs(baseDir, name, attrs);
             serviceGenerator.generateService(baseDir, name, entity);
@@ -134,6 +201,11 @@ public class CodeGeneratorService {
         securityGenerator.generateSecurityClasses(baseDir);
         exceptionHandlerGenerator.generateGlobalExceptionHandler(baseDir);
     }
+    
+    private void generateAdminInitializer(String baseDir) throws IOException {
+        adminUserInitializerGenerator.generateAdminUserInitializer(baseDir);
+    }
+
 
     private void generateFrontend(List<Map<String, Object>> entities, String appName) throws IOException {
         thymeleafGenerator.generateTemplates(entities, appName);
@@ -141,5 +213,14 @@ public class CodeGeneratorService {
 
     private void generateBackoffice(List<Map<String, Object>> entities, String appName) throws IOException {
         backofficeControllerGenerator.generateBackofficeController(entities, appName);
+    }
+
+    private void generateFunctionalities(String baseDir, List<Map<String, Object>> functionalities, List<Map<String, Object>> entities, boolean useAi) throws IOException {
+        if (!functionalities.isEmpty()) {
+            functionalityDtoGenerator.generateFunctionalityDTOs(baseDir, functionalities);
+            functionalityServiceInterfaceGenerator.generateFunctionalityServiceInterfaces(baseDir, functionalities);
+            functionalityServiceImplGenerator.generateFunctionalityServiceImpls(baseDir, functionalities, entities, useAi);
+            functionalityControllerGenerator.generateFunctionalityControllers(baseDir, functionalities);
+        }
     }
 }

@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class ControllerGenerator {
 
     public void generateController(String baseDir, String name, List<Map<String, Object>> attrs, Map<String, Object> entity) throws IOException {

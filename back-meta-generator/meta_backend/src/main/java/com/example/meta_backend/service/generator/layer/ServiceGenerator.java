@@ -5,9 +5,14 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class ServiceGenerator {
 
     public void generateService(String baseDir, String name, Map<String, Object> entity) throws IOException {
+        String className = capitalizeFirstLetter(name);
+        
         Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
         List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
 
@@ -20,7 +25,7 @@ public class ServiceGenerator {
                 public %sService(%sRepository repository) {
                     this.repository = repository;
                 }
-        """.formatted(name, name, name);
+        """.formatted(className, className, className);
 
         // Conditionally add methods based on endpoints
         if (endpoints.contains("crud")) {
@@ -40,7 +45,7 @@ public class ServiceGenerator {
                     public void delete(Long id) {
                         repository.deleteById(id);
                     }
-            """.formatted(name, name, name, name));
+            """.formatted(className, className, className, className));
         }
 
         if (endpoints.contains("search")) {
@@ -49,7 +54,7 @@ public class ServiceGenerator {
                         // Implement search logic here
                         return repository.findAll(); // Placeholder
                     }
-            """.formatted(name));
+            """.formatted(className));
         }
 
         if (endpoints.contains("filter_by_date_range")) {
@@ -58,7 +63,7 @@ public class ServiceGenerator {
                         // Implement filter logic here
                         return repository.findAll(); // Placeholder
                     }
-            """.formatted(name));
+            """.formatted(className));
         }
 
         if (endpoints.contains("bulk_create")) {
@@ -66,7 +71,7 @@ public class ServiceGenerator {
                     public List<%s> saveAll(List<%s> objs) {
                         return repository.saveAll(objs);
                     }
-            """.formatted(name, name));
+            """.formatted(className, className));
         }
 
         if (endpoints.contains("bulk_delete")) {
@@ -92,7 +97,7 @@ public class ServiceGenerator {
                         // Implement import logic here
                         return List.of(); // Placeholder
                     }
-            """.formatted(name));
+            """.formatted(className));
         }
 
         String code = """
@@ -112,10 +117,17 @@ public class ServiceGenerator {
 
                 %s
             }
-            """.formatted(name, name, name, constructor, methods.toString());
+            """.formatted(className, className, className, constructor, methods.toString());
 
         // Cria diretório se não existir
         Files.createDirectories(Paths.get(baseDir + "service/"));
-        Files.writeString(Paths.get(baseDir + "service/" + name + "Service.java"), code);
+        Files.writeString(Paths.get(baseDir + "service/" + className + "Service.java"), code);
+    }
+    
+    private String capitalizeFirstLetter(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 }

@@ -1,7 +1,13 @@
-export default function Input({ className = "", ...props }) {
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+export default function Input({ className, ...props }) {
   return (
     <input
-      className={`px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500 ${className}`}
+      className={cn(
+        "flex h-10 w-1/2 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
       {...props}
     />
   );

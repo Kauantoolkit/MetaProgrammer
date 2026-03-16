@@ -1,10 +1,15 @@
 package com.example.meta_backend.service.generator.base;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class ThymeleafFrontGenerator {
 
     private String baseDir;
@@ -12,18 +17,25 @@ public class ThymeleafFrontGenerator {
     public void generateTemplates(List<Map<String, Object>> entities, String appName) throws IOException {
         String baseDir = appName + "/src/main/resources/templates/";
         String staticDir = appName + "/src/main/resources/static/";
+        
         // Cria pastas base
         Files.createDirectories(Paths.get(baseDir + "layouts"));
         Files.createDirectories(Paths.get(baseDir + "fragments"));
         Files.createDirectories(Paths.get(baseDir + "backoffice"));
+        
+        // CRIA PASTA CSS NO STATIC - Thymeleaf precisa encontrar o CSS em /static/css/
+        Files.createDirectories(Paths.get(staticDir + "css"));
 
         // Layout base
         Files.writeString(Paths.get(baseDir + "layouts/base.html"), baseLayoutContent());
 
-        // Sidebar
+        // CSS principal - GERA O ARQUIVO CSS PARA QUE O thymeleaf encontre
+        Files.writeString(Paths.get(staticDir + "css/style.css"), cssContent());
+
+        // Sidebar - CORRIGIDO: Links apontam para /backoffice/{entity}
         Files.writeString(Paths.get(baseDir + "fragments/sidebar.html"), sidebarContent(entities));
 
-        // Backoffice index
+        // Backoffice index - CORRIGIDO: Links apontam para /backoffice/{entity}
         Files.writeString(Paths.get(baseDir + "backoffice/index.html"), backofficeIndexContent(entities));
 
         // Backoffice login
@@ -36,18 +48,32 @@ public class ThymeleafFrontGenerator {
         Files.createDirectories(Paths.get(staticDir));
         Files.writeString(Paths.get(staticDir + "login.html"), staticLoginContent());
 
-        // Templates por entidade (apenas se CRUD estiver habilitado)
+        // Templates por entidade - CORRIGIDO: agora gera em backoffice/{entityName}/
         for (Map<String, Object> entity : entities) {
+            String name = (String) entity.get("name");
+            
+            // Pula a entidade Users pois já tem seus templates
+            if ("Users".equalsIgnoreCase(name)) {
+                continue;
+            }
+            
+            List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
+            
+            // CORRIGIDO: Pasta correta é backoffice/{entityName}/ não {entityName}/
+            Path entityDir = Paths.get(baseDir + "backoffice/" + name.toLowerCase());
+            Files.createDirectories(entityDir);
+
+            // Verifica se a entidade tem CRUD configurado
             Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
             List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
-
-            if (endpoints.contains("crud")) {
-                String name = (String) entity.get("name");
-                List<Map<String, Object>> attrs = (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
-                Path entityDir = Paths.get(baseDir + name.toLowerCase());
-                Files.createDirectories(entityDir);
-
-                Files.writeString(entityDir.resolve("list.html"), generateListHtml(name, attrs));
+            boolean hasCrud = endpoints.contains("crud");
+            
+            // Gera list.html para todas as entidades (passa hasCrud para exibir mensagem correta)
+            // CORRIGIDO: agora estende o base layout
+            Files.writeString(entityDir.resolve("list.html"), generateListHtml(name, attrs, hasCrud));
+            
+            // Gera addEditDialog.html apenas se a entidade tiver o endpoint "crud"
+            if (hasCrud) {
                 Files.writeString(entityDir.resolve("addEditDialog.html"), generateDialogHtml(name, attrs));
             }
         }
@@ -157,7 +183,7 @@ public class ThymeleafFrontGenerator {
                     default -> "📄";
                 };
                 sb.append("<li class=\"nav-item mb-2\">\n")
-                  .append(String.format("<a class=\"nav-link d-flex align-items-center\" th:href=\"@{'/%s/list'}\">\n", name.toLowerCase()))
+                  .append(String.format("<a class=\"nav-link d-flex align-items-center\" th:href=\"@{'/backoffice/%s/list'}\">\n", name.toLowerCase()))
                   .append(String.format("<span>%s</span> %s\n", icon, name))
                   .append("</a>\n")
                   .append("</li>\n");
@@ -191,7 +217,7 @@ public class ThymeleafFrontGenerator {
 
             if (endpoints.contains("crud")) {
                 String name = (String) entity.get("name");
-                sb.append(String.format("<li><a th:href=\"@{'/%s/list'}\">%s</a></li>\n", name.toLowerCase(), name));
+                sb.append(String.format("<li><a th:href=\"@{'/backoffice/%s/list'}\">%s</a></li>\n", name.toLowerCase(), name));
             }
         }
 
@@ -204,95 +230,38 @@ public class ThymeleafFrontGenerator {
         return sb.toString();
     }
 
-    private String generateListHtml(String entityName, List<Map<String, Object>> attrs) {
+    private String generateListHtml(String entityName, List<Map<String, Object>> attrs, boolean hasCrud) {
         StringBuilder sb = new StringBuilder();
         String entityPath = entityName.toLowerCase();
 
+        // CORRIGIDO: Agora usa o layout base para carregar o CSS corretamente
         sb.append("<!DOCTYPE html>\n")
-          .append("<html xmlns:th=\"http://www.thymeleaf.org\">\n")
+          .append("<html xmlns:th=\"http://www.thymeleaf.org\" xmlns:layout=\"http://www.ultraq.net.nz/thymeleaf/layout\">\n")
           .append("<head>\n")
           .append("<meta charset=\"UTF-8\">\n")
           .append(String.format("<title>%s List</title>\n", entityName))
-          .append("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\"/>\n")
-          .append("<style>\n")
-          .append("body {\n")
-          .append("    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n")
-          .append("    min-height: 100vh;\n")
-          .append("    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n")
-          .append("}\n")
-          .append(".sidebar {\n")
-          .append("    background: rgba(255, 255, 255, 0.95);\n")
-          .append("    backdrop-filter: blur(10px);\n")
-          .append("}\n")
-          .append(".content-area {\n")
-          .append("    background: rgba(255, 255, 255, 0.95);\n")
-          .append("    border-radius: 15px;\n")
-          .append("    box-shadow: 0 10px 30px rgba(0,0,0,0.3);\n")
-          .append("    margin: 20px;\n")
-          .append("    padding: 30px;\n")
-          .append("    backdrop-filter: blur(10px);\n")
-          .append("}\n")
-          .append("h2 {\n")
-          .append("    color: #333;\n")
-          .append("    font-weight: 700;\n")
-          .append("    margin-bottom: 30px;\n")
-          .append("}\n")
-          .append(".table {\n")
-          .append("    background: white;\n")
-          .append("    border-radius: 10px;\n")
-          .append("    overflow: hidden;\n")
-          .append("    box-shadow: 0 5px 15px rgba(0,0,0,0.1);\n")
-          .append("}\n")
-          .append(".table thead th {\n")
-          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
-          .append("    color: white;\n")
-          .append("    border: none;\n")
-          .append("    font-weight: 600;\n")
-          .append("}\n")
-          .append(".table tbody tr:hover {\n")
-          .append("    background: rgba(102, 126, 234, 0.1);\n")
-          .append("}\n")
-          .append(".btn-primary {\n")
-          .append("    background: linear-gradient(45deg, #667eea, #764ba2);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 25px;\n")
-          .append("    padding: 10px 25px;\n")
-          .append("    font-weight: 600;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-primary:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);\n")
-          .append("}\n")
-          .append(".btn-warning {\n")
-          .append("    background: linear-gradient(45deg, #f093fb, #f5576c);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 20px;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-warning:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);\n")
-          .append("}\n")
-          .append(".btn-danger {\n")
-          .append("    background: linear-gradient(45deg, #ff6b6b, #ee5a24);\n")
-          .append("    border: none;\n")
-          .append("    border-radius: 20px;\n")
-          .append("    transition: all 0.3s ease;\n")
-          .append("}\n")
-          .append(".btn-danger:hover {\n")
-          .append("    transform: translateY(-2px);\n")
-          .append("    box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);\n")
-          .append("}\n")
-          .append("</style>\n")
           .append("</head>\n")
           .append("<body>\n")
-          .append("<div class=\"d-flex\">\n")
-          .append("<div th:replace=\"fragments/sidebar :: sidebar\"></div>\n")
-          .append("<div class=\"content-area\">\n")
-          .append(String.format("<h2>Lista de %s</h2>\n", entityName))
-          .append(String.format("<button class=\"btn btn-primary mb-3\" data-bs-toggle=\"modal\" data-bs-target=\"#addEditModal-%s\">Adicionar</button>\n", entityPath))
-          .append("<table class=\"table table-bordered\">\n<thead>\n<tr>\n");
+          // CORRIGIDO: Usa layout:decorate para estender o layout base
+          .append("<div layout:decorate=\"~{layouts/base}\">\n")
+          .append("<div layout:fragment=\"content\">\n")
+          .append(String.format("<h2>Lista de %s</h2>\n", entityName));
+        
+        // Mensagem para entidades sem CRUD
+        if (!hasCrud) {
+            sb.append("""
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">📋 Operação Somente Leitura</h4>
+                    <p>Esta entidade não possui operações de CRUD configuradas.</p>
+                    <hr>
+                    <p class="mb-0">Apenas visualização disponível. Para habilitar operações de edição, configure o endpoint "crud" nas configurações da API.</p>
+                </div>
+                """);
+        } else {
+            sb.append(String.format("<button class=\"btn btn-primary mb-3\" data-bs-toggle=\"modal\" data-bs-target=\"#addEditModal-%s\">Adicionar</button>\n", entityPath));
+        }
+        
+        sb.append("<table class=\"table table-bordered\">\n<thead>\n<tr>\n");
 
         for (Map<String, Object> attr : attrs) {
             sb.append("<th>").append(attr.get("name")).append("</th>\n");
@@ -303,7 +272,9 @@ public class ThymeleafFrontGenerator {
             sb.append("<td th:text=\"${item.").append(attr.get("name")).append("}\"></td>\n");
         }
 
-        sb.append(String.format("""
+        // Botões de ação apenas se tiver CRUD
+        if (hasCrud) {
+            sb.append(String.format("""
             <td>
                 <button class="btn btn-sm btn-warning" th:onclick="|openEditModal('%s','${item.id}')|">Editar</button>
                 <button class="btn btn-sm btn-danger" th:onclick="|deleteItem('%s','${item.id}')|">Deletar</button>
@@ -311,50 +282,22 @@ public class ThymeleafFrontGenerator {
         </tr>
     </tbody>
     </table>
+    <div th:insert="~{backoffice/%s/addEditDialog :: modal}"></div>
     </div>
-    <div th:insert="~{%s/addEditDialog :: modal}"></div>
-        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Função para abrir modal e preencher campos via REST
-        function openEditModal(entity, id) {
-            fetch('/api/' + entity + '/' + id)
-                .then(res => res.json())
-                .then(data => {
-                    const form = document.querySelector('#addEditModal-' + entity + ' form');
-                    Object.keys(data).forEach(key => {
-                        if(form[key]) form[key].value = data[key];
-                    });
-                    new bootstrap.Modal(document.getElementById('addEditModal-' + entity)).show();
-                });
-        }
-
-        // Deletar item via REST
-        function deleteItem(entity, id) {
-            if(confirm('Deseja realmente deletar este registro?')) {
-                fetch('/api/' + entity + '/' + id, { method: 'DELETE' })
-                    .then(() => location.reload());
-            }
-        }
-
-        // Salvar via REST (novo ou editar)
-        function submitForm(entity) {
-            const form = document.querySelector('#form-' + entity);
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            fetch('/api/' + entity, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .then(() => location.reload());
-        }
-    </script>
-    </body>
-    </html>
     """, entityPath, entityPath, entityPath));
+        } else {
+            sb.append("""
+        </tr>
+    </tbody>
+    </table>
+    </div>
+    </div>
+    """);
+        }
+
+        // Fecha os divs do layout:decorate e layout:fragment
+        sb.append("</div>\n</div>\n");
 
         return sb.toString();
     }
@@ -614,4 +557,216 @@ public class ThymeleafFrontGenerator {
                 </body>
                 </html>
                 """;
-    }}
+    }
+
+    private String cssContent() {
+        return """
+/* Main styles for Thymeleaf templates */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--primary-gradient);
+    min-height: 100vh;
+}
+
+.sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    min-height: 100vh;
+    padding: 20px;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar h5 {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.sidebar .nav-link {
+    color: #333;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary-color);
+}
+
+.content-area {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    margin: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.dashboard-container {
+    padding: 20px;
+}
+
+.dashboard-container h2 {
+    color: #333;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+/* Table styles */
+.table {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.table thead th {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 15px;
+}
+
+.table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.table tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+}
+
+/* Button styles */
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: var(--primary-gradient);
+}
+
+.btn-warning {
+    background: linear-gradient(45deg, #f093fb, #f5576c);
+    border: none;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+    background: linear-gradient(45deg, #f093fb, #f5576c);
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 0.85rem;
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Alert styles */
+.alert-info {
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid #667eea;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.alert-info .alert-heading {
+    color: var(--primary-color);
+}
+
+/* Modal styles */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 20px;
+}
+
+.modal-header .btn-close {
+    color: white;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+/* Utility classes */
+.d-flex {
+    display: flex;
+}
+
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+.p-3 {
+    padding: 1rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.justify-content-end {
+    justify-content: flex-end;
+}
+
+.align-items-center {
+    align-items: center;
+}
+""";
+    }
+}

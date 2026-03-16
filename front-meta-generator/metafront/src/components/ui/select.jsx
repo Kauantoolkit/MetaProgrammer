@@ -1,5 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { ChevronDown } from "lucide-react";
+
+// ---------------------------
+// CONTEXT
+// ---------------------------
+const SelectContext = createContext();
+const useSelect = () => useContext(SelectContext);
 
 export function Select({ children, value, onValueChange }) {
   const [open, setOpen] = useState(false);
@@ -10,14 +16,6 @@ export function Select({ children, value, onValueChange }) {
     </SelectContext.Provider>
   );
 }
-
-// ---------------------------
-// CONTEXT
-// ---------------------------
-import { createContext, useContext } from "react";
-
-const SelectContext = createContext();
-const useSelect = () => useContext(SelectContext);
 
 // ---------------------------
 // TRIGGER

@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, Check, Download, Minimize2, Maximize2, Rocket, Upload } from 'lucide-react';
 import { toast } from "sonner";
 
-export default function JsonPreview({ entities, appName, nodePositions, onLoadProject }) {
+export default function JsonPreview({ entities, functionalities, appName, nodePositions, onLoadProject }) {
   const [copied, setCopied] = useState(false);
   const [showSimplified, setShowSimplified] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
@@ -13,6 +13,19 @@ export default function JsonPreview({ entities, appName, nodePositions, onLoadPr
   const simplifiedJson = {
     appName,
     nodePositions,
+    functionalities: functionalities.map(f => ({
+      name: f.name,
+      input: f.input.map(i => ({
+        name: i.name,
+        type: i.type
+      })),
+      output: f.output.map(o => ({
+        name: o.name,
+        type: o.type
+      })),
+      entity: f.entity,
+      exposeInBackoffice: f.exposeInBackoffice
+    })),
     entities: entities.map(e => ({
       name: e.name,
       attributes: e.attributes.map(a => ({
@@ -30,6 +43,19 @@ export default function JsonPreview({ entities, appName, nodePositions, onLoadPr
   const enrichedJson = {
     appName,
     nodePositions,
+    functionalities: functionalities.map(f => ({
+      name: f.name,
+      input: f.input.map(i => ({
+        name: i.name,
+        type: i.type
+      })),
+      output: f.output.map(o => ({
+        name: o.name,
+        type: o.type
+      })),
+      entity: f.entity,
+      exposeInBackoffice: f.exposeInBackoffice
+    })),
     entities: entities.map(e => ({
       name: e.name,
       attributes: e.attributes.map(a => {
@@ -72,10 +98,11 @@ export default function JsonPreview({ entities, appName, nodePositions, onLoadPr
 
   const generateBackend = async () => {
     try {
+      // Sempre usa o JSON enriquecido para garantir behaviors, api config e relations completas
       const response = await fetch("http://localhost:8080/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentJson),
+        body: JSON.stringify(enrichedJson),
       });
 
       if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
@@ -181,7 +208,7 @@ export default function JsonPreview({ entities, appName, nodePositions, onLoadPr
       )}
 
       <div className="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
-        <span>{entities.length} entidades</span>
+        <span>{entities.length} entidades • {functionalities.length} funcionalidades</span>
         <span>{jsonString.length.toLocaleString()} caracteres</span>
       </div>
     </div>
