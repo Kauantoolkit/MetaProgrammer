@@ -98,10 +98,11 @@ export default function JsonPreview({ entities, functionalities, appName, nodePo
 
   const generateBackend = async () => {
     try {
+      // Sempre usa o JSON enriquecido para garantir behaviors, api config e relations completas
       const response = await fetch("http://localhost:8080/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentJson),
+        body: JSON.stringify(enrichedJson),
       });
 
       if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);

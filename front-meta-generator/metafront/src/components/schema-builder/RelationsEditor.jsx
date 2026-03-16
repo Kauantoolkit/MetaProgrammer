@@ -34,28 +34,9 @@ export default function RelationsEditor({ entity, allEntities, onUpdate }) {
     cascade: 'restrict'
   };
 
-  // Atualiza a entidade atual
   onUpdate({
     ...entity,
     relations: [...entity.relations, newRelation]
-  }, (allEntities) => {
-    // Atualiza a entidade alvo espelhando a relação
-    return allEntities.map(e => {
-      if (e.name === targetEntity.name) {
-        const reverseType = newRelation.type === '1:N' ? 'N:1'
-                         : newRelation.type === 'N:1' ? '1:N'
-                         : newRelation.type;
-
-        const exists = e.relations?.some(r => r.target === entity.name);
-        if (exists) return e;
-
-        return {
-          ...e,
-          relations: [...(e.relations || []), { target: entity.name, type: reverseType, required: false, cascade: 'restrict' }]
-        };
-      }
-      return e;
-    });
   });
 };
 
@@ -64,25 +45,7 @@ const handleUpdateRelation = (index, updates) => {
   const oldRelation = newRelations[index];
   newRelations[index] = { ...oldRelation, ...updates };
 
-  onUpdate({ ...entity, relations: newRelations }, (allEntities) => {
-    return allEntities.map(e => {
-      if (e.name === oldRelation.target) {
-        const reverseType = newRelations[index].type === '1:N' ? 'N:1'
-                         : newRelations[index].type === 'N:1' ? '1:N'
-                         : newRelations[index].type;
-
-        const relIndex = e.relations.findIndex(r => r.target === entity.name);
-        const newRel = { target: entity.name, type: reverseType, required: newRelations[index].required, cascade: newRelations[index].cascade };
-
-        let updatedRels = [...(e.relations || [])];
-        if (relIndex !== -1) updatedRels[relIndex] = newRel;
-        else updatedRels.push(newRel);
-
-        return { ...e, relations: updatedRels };
-      }
-      return e;
-    });
-  });
+  onUpdate({ ...entity, relations: newRelations });
 };
 
 const handleDeleteRelation = (index) => {
@@ -91,16 +54,6 @@ const handleDeleteRelation = (index) => {
   onUpdate({
     ...entity,
     relations: entity.relations.filter((_, i) => i !== index)
-  }, (allEntities) => {
-    return allEntities.map(e => {
-      if (e.name === relToRemove.target) {
-        return {
-          ...e,
-          relations: (e.relations || []).filter(r => r.target !== entity.name)
-        };
-      }
-      return e;
-    });
   });
 };
 

@@ -1,93 +1,24 @@
 {
-  "appName": "my-app",
-  "nodePositions": [
-    {
-      "x": 560,
-      "y": 100
-    },
-    {
-      "x": 120,
-      "y": 240
-    },
-    {
-      "x": 560,
-      "y": 240
-    },
-    {
-      "x": 560,
-      "y": 380
-    }
-  ],
+  "appName": "conversor",
+  "useAi": true,
   "entities": [
-    {
-      "name": "Users",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "Long",
-          "constraints": [
-            "primary_key"
-          ]
-        },
-        {
-          "name": "username",
-          "type": "String",
-          "constraints": [
-            "unique"
-          ]
-        },
-        {
-          "name": "password",
-          "type": "String"
-        },
-        {
-          "name": "role",
-          "type": "Enum"
-        },
-        {
-          "name": "enabled",
-          "type": "Boolean",
-          "default": true
-        }
-      ],
-      "relations": [],
-      "behaviors": [],
-      "api": {
-        "endpoints": [],
-        "auth": "required",
-        "roles": [
-          "admin"
-        ]
-      }
-    },
     {
       "name": "ConversionType",
       "attributes": [
         {
           "name": "id",
           "type": "number",
-          "constraints": [
-            "primary_key",
-            "auto_increment"
-          ]
+          "constraints": ["primary_key", "auto_increment"]
         },
         {
           "name": "input_format",
           "type": "string",
-          "constraints": [
-            "required",
-            "min:1",
-            "max_length:20"
-          ]
+          "constraints": ["required", "max_length:20"]
         },
         {
           "name": "output_format",
           "type": "string",
-          "constraints": [
-            "required",
-            "min:1",
-            "max_length:50"
-          ]
+          "constraints": ["required", "max_length:50"]
         },
         {
           "name": "enabled",
@@ -102,15 +33,11 @@
           "cascade": "restrict"
         }
       ],
-      "behaviors": [
-        "soft_delete"
-      ],
+      "behaviors": ["soft_delete"],
       "api": {
-        "endpoints": [],
+        "endpoints": ["crud"],
         "auth": "required",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"]
       }
     },
     {
@@ -119,36 +46,25 @@
         {
           "name": "id",
           "type": "number",
-          "constraints": [
-            "primary_key",
-            "auto_increment"
-          ]
+          "constraints": ["primary_key", "auto_increment"]
         },
         {
-          "name": "cj_input_format",
+          "name": "input_format",
           "type": "string",
-          "constraints": [
-            "min:1",
-            "max_length:50",
-            "required"
-          ]
+          "constraints": ["required", "max_length:50"]
         },
         {
-          "name": "cj_output_format",
+          "name": "output_format",
           "type": "string",
-          "constraints": [
-            "required"
-          ]
+          "constraints": ["required"]
         },
         {
-          "name": "cj_sucess",
+          "name": "success",
           "type": "boolean",
-          "constraints": [
-            "required"
-          ]
+          "constraints": ["required"]
         },
         {
-          "name": "cj_client_ip",
+          "name": "client_ip",
           "type": "string"
         }
       ],
@@ -160,15 +76,11 @@
           "cascade": "restrict"
         }
       ],
-      "behaviors": [
-        "soft_delete"
-      ],
+      "behaviors": ["soft_delete", "timestamps"],
       "api": {
-        "endpoints": [],
+        "endpoints": ["crud", "search"],
         "auth": "required",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"]
       }
     },
     {
@@ -177,44 +89,75 @@
         {
           "name": "id",
           "type": "number",
-          "constraints": [
-            "primary_key",
-            "auto_increment"
-          ]
+          "constraints": ["primary_key", "auto_increment"]
         },
         {
-          "name": "clientIp",
+          "name": "client_ip",
           "type": "string",
-          "constraints": [
-            "min:1",
-            "max_length:20",
-            "required"
-          ]
+          "constraints": ["required", "max_length:45"]
         },
         {
-          "name": "date",
+          "name": "usage_date",
           "type": "date",
-          "constraints": [
-            "required"
-          ]
+          "constraints": ["required"]
         },
         {
           "name": "conversions_today",
           "type": "number",
-          "constraints": [
-            "required"
-          ]
+          "constraints": ["required"]
         }
       ],
       "relations": [],
       "behaviors": [],
       "api": {
-        "endpoints": [],
+        "endpoints": ["crud"],
         "auth": "required",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"]
       }
+    }
+  ],
+  "functionalities": [
+    {
+      "name": "CheckRateLimit",
+      "input": [
+        { "name": "clientIp", "type": "string" }
+      ],
+      "output": [
+        { "name": "allowed", "type": "boolean" },
+        { "name": "conversionsToday", "type": "number" },
+        { "name": "remainingConversions", "type": "number" }
+      ],
+      "entity": "ClientUsage",
+      "exposeInBackoffice": false
+    },
+    {
+      "name": "RegisterConversionJob",
+      "input": [
+        { "name": "clientIp", "type": "string" },
+        { "name": "inputFormat", "type": "string" },
+        { "name": "outputFormat", "type": "string" },
+        { "name": "success", "type": "boolean" }
+      ],
+      "output": [
+        { "name": "jobId", "type": "number" },
+        { "name": "message", "type": "string" }
+      ],
+      "entity": "ConversionJob",
+      "exposeInBackoffice": true
+    },
+    {
+      "name": "GetConversionStats",
+      "input": [
+        { "name": "clientIp", "type": "string" }
+      ],
+      "output": [
+        { "name": "totalJobs", "type": "number" },
+        { "name": "successfulJobs", "type": "number" },
+        { "name": "failedJobs", "type": "number" },
+        { "name": "successRate", "type": "number" }
+      ],
+      "entity": "ConversionJob",
+      "exposeInBackoffice": true
     }
   ]
 }

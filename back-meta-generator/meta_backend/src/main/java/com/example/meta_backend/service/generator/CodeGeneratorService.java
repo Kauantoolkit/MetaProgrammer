@@ -88,14 +88,14 @@ public class CodeGeneratorService {
         this.functionalityControllerGenerator = functionalityControllerGenerator;
     }
 
-    public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities) {
+    public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities, boolean useAi) {
         try {
             // Generate random admin password
             String adminPassword = generateRandomPassword(16);
-            
+
             // Derive Java-safe class name from app name
             String javaClassName = AppNameUtils.toClassName(appName);
-            
+
             generateProjectStructure(appName);
             generateCoreFiles(appName, adminPassword, javaClassName);
 
@@ -104,7 +104,7 @@ public class CodeGeneratorService {
             generateSecurityUsers(baseDir);
             generateDomainLayers(baseDir, entities, appName);
             flywayMigrationGenerator.generateFlywayMigration(appName, entities);
-            generateFunctionalities(baseDir, functionalities);
+            generateFunctionalities(baseDir, functionalities, entities, useAi);
             generateInfrastructure(baseDir);
             generateFrontend(entities, appName);
             generateBackoffice(entities, appName);
@@ -215,11 +215,11 @@ public class CodeGeneratorService {
         backofficeControllerGenerator.generateBackofficeController(entities, appName);
     }
 
-    private void generateFunctionalities(String baseDir, List<Map<String, Object>> functionalities) throws IOException {
+    private void generateFunctionalities(String baseDir, List<Map<String, Object>> functionalities, List<Map<String, Object>> entities, boolean useAi) throws IOException {
         if (!functionalities.isEmpty()) {
             functionalityDtoGenerator.generateFunctionalityDTOs(baseDir, functionalities);
             functionalityServiceInterfaceGenerator.generateFunctionalityServiceInterfaces(baseDir, functionalities);
-            functionalityServiceImplGenerator.generateFunctionalityServiceImpls(baseDir, functionalities);
+            functionalityServiceImplGenerator.generateFunctionalityServiceImpls(baseDir, functionalities, entities, useAi);
             functionalityControllerGenerator.generateFunctionalityControllers(baseDir, functionalities);
         }
     }

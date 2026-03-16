@@ -21,7 +21,7 @@ export default function FunctionalityConfigEditor({ functionality, allEntities, 
     onUpdate(updatedFunctionality);
   };
 
-  const availableEntities = allEntities.filter(e => e.name !== "User");
+  const availableEntities = allEntities.filter(e => e.name !== "Users");
 
   return (
     <div className="space-y-6">

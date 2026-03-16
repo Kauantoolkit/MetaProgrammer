@@ -105,15 +105,25 @@ public class EntityGenerator {
 
                 String type = (String) rel.get("type");
                 String target = (String) rel.get("target");
-                String field = (String) rel.get("name");
 
-                if (type == null || target == null || field == null) continue;
+                if (type == null || target == null) continue;
 
                 // Convert relation type from "1:1", "1:N", "N:1", "N:N" to JPA format
                 type = convertRelationType(type);
 
                 target = sanitizeClassName(target);
-                field = sanitizeFieldName(field);
+
+                // Deriva o nome do campo a partir do target se não vier explícito no JSON
+                String rawField = (String) rel.get("name");
+                String field;
+                if (rawField != null && !rawField.isBlank()) {
+                    field = sanitizeFieldName(rawField);
+                } else {
+                    // N:1 / 1:1 → campo singular (conversionType); 1:N / N:N → plural (conversionTypes)
+                    String singular = Character.toLowerCase(target.charAt(0)) + target.substring(1);
+                    boolean isCollection = type.equalsIgnoreCase("ONETOMANY") || type.equalsIgnoreCase("MANYTOMANY");
+                    field = isCollection ? singular + "s" : singular;
+                }
 
                 String targetTableName = target.toLowerCase();
                 
@@ -238,9 +248,21 @@ public class EntityGenerator {
     }
 
     private String sanitizeFieldName(String name) {
-        String cleaned = name.replaceAll("[^a-zA-Z0-9]", "");
-        if (cleaned.isBlank()) return "field";
-        return Character.toLowerCase(cleaned.charAt(0)) + cleaned.substring(1);
+        if (name == null || name.isBlank()) return "field";
+        // Converte snake_case / kebab-case para camelCase
+        String[] parts = name.split("[_\\-\\s]+");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].replaceAll("[^a-zA-Z0-9]", "");
+            if (part.isBlank()) continue;
+            if (i == 0) {
+                sb.append(Character.toLowerCase(part.charAt(0))).append(part.substring(1));
+            } else {
+                sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
+        }
+        String result = sb.toString();
+        return result.isBlank() ? "field" : result;
     }
 
     private String sanitizeTableName(String name) {

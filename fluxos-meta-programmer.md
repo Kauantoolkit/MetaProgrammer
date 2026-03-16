@@ -481,6 +481,70 @@ json
 
 ---
 
+## FLUXO 16: GERAÇÃO DE FUNCIONALIDADES COM IA (LLM)
+
+### 16.1 Componentes
+| Componente | Descrição |
+|------------|-----------|
+| `LlmClient` | Chama Ollama (`/api/generate`) ou API OpenAI-compatível via WebClient com buffer 10MB |
+| `ContextBuilder` | Monta system prompt + user prompt com schema das entidades, repos, DTOs e interface |
+| `RepositoryInjector` | Lê o arquivo `.java` do repo e injeta assinaturas de métodos customizados antes do `}` |
+| `FunctionalityServiceImplGenerator` | Chama LLM, faz parse da resposta estruturada e escreve o impl |
+
+### 16.2 Formato de Resposta Esperado do Modelo
+```
+=== IMPL ===
+// corpo do método, sem assinatura, sem chaves externas
+=== END IMPL ===
+
+=== REPO NomeDoRepository ===
+ReturnType methodName(ParamType param);
+=== END REPO ===
+```
+
+### 16.3 Problemas Conhecidos do Modelo (qwen2.5-coder:latest / 7.6B)
+
+Esses problemas são **limitações do modelo**, não bugs do gerador. Melhorar o prompt ajuda parcialmente mas não elimina completamente.
+
+| # | Problema | Observado em | Impacto |
+|---|----------|-------------|---------|
+| 1 | **Variáveis sem declaração de tipo** | `GetConversionStats` (conversor9) | Não compila — `totalJobs =` sem `long totalJobs =` |
+| 2 | **Repositório errado chamado** | `CheckRateLimit` (conversor9) — usou `conversionTypeRepository.findByClientIp()` em vez de `clientUsageRepository` | Erro de compilação + comportamento incorreto |
+| 3 | **Chave extra no método** | `CheckRateLimit` (conversor9) — `}` extra na penúltima linha | Não compila |
+| 4 | **Uso de `.builder()` sem Lombok** | `RegisterConversionJob` (conversor9) — `ConversionJob.builder()` e `ResponseDto.builder()` | Não compila sem `@Builder` nas entidades/DTOs |
+| 5 | **Inclui assinatura do método no IMPL** | conversor7 | Gerador extrai o corpo automaticamente, resolvido no parser |
+| 6 | **Usa markdown (```java) dentro dos blocos** | conversor7/8 | Gerador remove automaticamente com `replaceAll` |
+| 7 | **Múltiplas assinaturas REPO numa linha só** | `ConversionJobRepository` (conversor9) | Gerador agora normaliza com re-split por `;` |
+| 8 | **Método customizado chamado mas não declarado no REPO** | `ClientUsageRepository` (conversor8) | Repo fica vazio, erro de compilação |
+
+### 16.4 O que o Gerador já Corrige Automaticamente
+- Remove ` ```java ` / ` ``` ` de qualquer posição no bloco IMPL
+- Extrai só o corpo se o modelo incluiu a assinatura do método no IMPL
+- Normaliza múltiplas assinaturas numa linha (split por `;`)
+- Filtra assinaturas sem tipo de retorno (inválidas)
+- Filtra assinaturas com backticks
+- Evita injetar métodos JPA padrão nos repositórios
+- Evita comentário duplicado `// --- métodos gerados automaticamente ---`
+
+### 16.5 O que NÃO é corrigido automaticamente (requer modelo melhor)
+- Variáveis usadas sem declaração de tipo
+- Repositório trocado (lógica de negócio errada)
+- Chaves desbalanceadas no corpo do método
+- Uso de padrão `.builder()` em classes sem Lombok
+- Métodos customizados chamados mas não declarados no REPO block
+
+### 16.6 Configuração
+```properties
+llm.enabled=true
+llm.mode=ollama
+llm.url=http://localhost:11434
+llm.model=qwen2.5-coder:latest
+llm.timeout-seconds=120
+```
+Modelos testados: `:latest` (7.6B) funciona. `:14b` causa erro de VRAM (GPU OOM).
+
+---
+
 ## ROADMAP DE IMPLEMENTAÇÃO
 
 ### Fase 1: Validações e Qualidade (Prioridade Alta)
