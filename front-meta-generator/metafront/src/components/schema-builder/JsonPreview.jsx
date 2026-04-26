@@ -107,11 +107,9 @@ export default function JsonPreview({ entities, functionalities, appName, nodePo
 
       if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
 
-      const text = await response.text();
+      await response.text();
       toast.success("Backend gerado com sucesso!");
-      console.log("Resposta do backend:", text);
     } catch (err) {
-      console.error(err);
       toast.error("Falha ao gerar backend: " + err.message);
     }
   };
