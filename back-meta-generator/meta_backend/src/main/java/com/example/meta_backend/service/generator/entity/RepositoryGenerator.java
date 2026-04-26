@@ -3,21 +3,21 @@ package com.example.meta_backend.service.generator.entity;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
 @Component
 public class RepositoryGenerator {
 
-    public void generateRepository(String baseDir, String entityName) throws IOException {
+    public void generateRepository(String baseDir, String entityName, List<Map<String, Object>> attrs) throws IOException {
         String className = capitalizeFirstLetter(entityName);
-        
-        boolean hasNameField = hasNameField(className);
 
         String searchMethod = "";
-        if (hasNameField) {
+        if (hasNameField(attrs)) {
             searchMethod = """
-                    
+
                     Page<%s> findByNameContainingIgnoreCase(String name, Pageable pageable);
                     """.formatted(className);
         }
@@ -41,24 +41,18 @@ public class RepositoryGenerator {
                 code
         );
     }
-    
-    private String capitalizeFirstLetter(String name) {
-        if (name == null || name.isEmpty()) {
-            return name;
-        }
-        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+
+    /** Checks the attribute list directly — no reflection on uncompiled classes. */
+    private boolean hasNameField(List<Map<String, Object>> attrs) {
+        if (attrs == null) return false;
+        return attrs.stream()
+                .filter(a -> a != null)
+                .anyMatch(a -> "name".equalsIgnoreCase((String) a.get("name")));
     }
 
-    private boolean hasNameField(String entityName) {
-        try {
-            Class<?> clazz = Class.forName(
-                    "com.metagen.backend.generated.entity." + entityName
-            );
-            clazz.getDeclaredField("name");
-            return true;
-        } catch (ClassNotFoundException | NoSuchFieldException e) {
-            return false;
-        }
+    private String capitalizeFirstLetter(String name) {
+        if (name == null || name.isEmpty()) return name;
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 
     public void generateUsersRepository(String baseDir) throws IOException {

@@ -7,6 +7,7 @@ import JsonPreview from './components/schema-builder/JsonPreview';
 import RelationDiagram from './components/schema-builder/RelationDiagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Database, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'schema_builder_entities_v1';
 const SELECTED_ENTITY_KEY = 'schema_builder_selected_entity_v1';
@@ -27,6 +28,8 @@ const storage = (() => {
     return null;
   }
 })();
+
+const STORAGE_UNAVAILABLE = storage === null;
 
 const loadEntities = () => {
   if (!storage) return [];
@@ -166,13 +169,27 @@ const syncRelations = (entities, sourceEntity) => {
 
 
 
+// Returns an error message if the entity name is invalid for a Java class, or null if valid.
+const validateEntityName = (name) => {
+  if (!name || name.trim() === '') return 'O nome não pode ser vazio.';
+  if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(name))
+    return 'O nome deve começar com letra e conter apenas letras e números (sem espaços ou caracteres especiais).';
+  return null;
+};
+
 export default function Home() {
   const [nodePositions, setNodePositions] = useState(loadNodePositions);
   const [entities, setEntities] = useState(() => {
-  const loaded = loadEntities();
-  const hasUsers = loaded.some(e => e.name === "Users");
-  return hasUsers ? loaded : [SYSTEM_USERS_ENTITY, ...loaded];
-});
+    const loaded = loadEntities();
+    const hasUsers = loaded.some(e => e.name === "Users");
+    return hasUsers ? loaded : [SYSTEM_USERS_ENTITY, ...loaded];
+  });
+
+  useEffect(() => {
+    if (STORAGE_UNAVAILABLE) {
+      toast.warning('Armazenamento de sessão indisponível. As alterações não serão salvas ao fechar a aba.');
+    }
+  }, []);
 
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [rightPanel, setRightPanel] = useState('json');
@@ -267,8 +284,9 @@ export default function Home() {
 };
 
   const handleAddEntity = () => {
+    const baseName = `Entidade${entities.length + 1}`;
     const newEntity = {
-      name: `NovaEntidade${entities.length + 1}`,
+      name: baseName,
       attributes: [{ name: "id", type: "Long", constraints: ["primary_key", "auto_increment"] }],
       relations: [],
       behaviors: [],
@@ -295,24 +313,34 @@ export default function Home() {
 
 
   const handleRenameEntity = (oldName, newName) => {
-  setEntities(prev => {
-    const renamed = prev.map(e => {
-      if (e.name === oldName) return { ...e, name: newName };
-      return {
-        ...e,
-        relations: e.relations.map(r =>
-          r.target === oldName ? { ...r, target: newName } : r
-        )
-      };
+    const error = validateEntityName(newName);
+    if (error) {
+      toast.error(`Nome inválido: ${error}`);
+      return;
+    }
+    if (entities.some(e => e.name === newName && e.name !== oldName)) {
+      toast.error(`Já existe uma entidade com o nome "${newName}".`);
+      return;
+    }
+
+    setEntities(prev => {
+      const renamed = prev.map(e => {
+        if (e.name === oldName) return { ...e, name: newName };
+        return {
+          ...e,
+          relations: e.relations.map(r =>
+            r.target === oldName ? { ...r, target: newName } : r
+          )
+        };
+      });
+
+      const updatedEntity = renamed.find(e => e.name === newName);
+      return syncRelations(renamed, updatedEntity);
     });
 
-    const updatedEntity = renamed.find(e => e.name === newName);
-    return syncRelations(renamed, updatedEntity);
-  });
-
-  if (selectedEntity?.name === oldName)
-    setSelectedEntity(prev => ({ ...prev, name: newName }));
-};
+    if (selectedEntity?.name === oldName)
+      setSelectedEntity(prev => ({ ...prev, name: newName }));
+  };
 
   const handleAddFunctionality = () => {
     const newFunctionality = {
@@ -377,8 +405,18 @@ export default function Home() {
             <label className="text-xs text-gray-400">App Name:</label>
             <input
               value={appName}
-              onChange={(e) => setAppName(e.target.value)}
-              className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded"
+              onChange={(e) => {
+                const val = e.target.value;
+                setAppName(val);
+                if (val && !/^[a-zA-Z0-9\-_]+$/.test(val)) {
+                  toast.warning('App Name deve conter apenas letras, números, hífens e underscores.');
+                }
+              }}
+              className={`px-2 py-1 text-xs bg-gray-700 border rounded ${
+                appName && !/^[a-zA-Z0-9\-_]+$/.test(appName)
+                  ? 'border-red-500'
+                  : 'border-gray-600'
+              }`}
             />
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
