@@ -1,5 +1,11 @@
 # MetaProgrammer
 
+**[Português](#português)** · **[English](#english)**
+
+---
+
+# Português
+
 Gerador de aplicações Spring Boot completas a partir de um schema JSON. Você define entidades, relacionamentos e funcionalidades — o MetaProgrammer gera o código.
 
 ---
@@ -220,3 +226,229 @@ Para cada aplicação definida no JSON, o gerador produz:
 **Interface de schema (metafront):** React 18, Vite, Tailwind CSS 3, Radix UI
 
 **Aplicações geradas:** Java 17, Spring Boot, PostgreSQL, Flyway, Spring Security, Thymeleaf
+
+---
+---
+
+# English
+
+Code generator that produces complete Spring Boot applications from a JSON schema. You define entities, relationships and functionalities — MetaProgrammer writes the code.
+
+---
+
+## What it does
+
+From a JSON payload, MetaProgrammer generates a ready-to-run Java project containing:
+
+- JPA entities with relationships (1:1, 1:N, N:1, N:N)
+- Flyway migrations (SQL) for database creation
+- Request/response DTOs
+- Spring Data JPA repositories
+- Services and REST controllers with configurable endpoints
+- Spring Security authentication (form-based, with an auto-generated admin user)
+- Thymeleaf backoffice panel
+- Custom functionalities (generated service interfaces + DTOs, manual implementation)
+
+---
+
+## Project structure
+
+```
+MetaProgrammer/
+├── back-meta-generator/        # Generator backend (Spring Boot)
+│   └── meta_backend/
+│       └── src/.../service/generator/
+│           ├── base/           # Base structure, pom.xml, migrations, main class
+│           ├── entity/         # Entities, repositories, DTOs
+│           ├── layer/          # Services, controllers, backoffice
+│           ├── config/         # application.properties, exception handler, admin init
+│           ├── security/       # Spring Security config
+│           └── functionality/  # Functionality DTOs, interfaces and stubs
+│
+├── front-meta-generator/       # Schema builder (React + Vite + Tailwind)
+│   └── metafront/
+│       └── src/components/schema-builder/
+│           ├── EntityEditor, AttributesEditor, RelationsEditor
+│           ├── BehaviorsEditor, ApiConfigEditor, DtoEditor
+│           ├── FunctionalityEditor, InputEditor, OutputEditor
+│           ├── RelationDiagram, JsonPreview
+│           └── home.jsx        # Main screen
+│
+├── payloadSistemaPedidos.json  # Example: order system (7 entities, 10 functionalities)
+├── payloadConversionSystem.json
+├── json_base.json
+└── fluxos-meta-programmer.md   # Generation flow documentation
+```
+
+---
+
+## Usage
+
+### 1. Visual editor (recommended)
+
+Start the React frontend and build the schema in the builder:
+
+```bash
+cd front-meta-generator/metafront
+npm install
+npm run dev
+```
+
+Define entities, attributes, relationships, behaviors and functionalities. The JSON is generated in real time in the side panel.
+
+### 2. Send for generation
+
+With the backend running, post the JSON to the generation endpoint:
+
+```bash
+POST http://localhost:8080/generate
+Content-Type: application/json
+
+{ ...payload... }
+```
+
+The system returns a `.zip` with the generated project, ready to use.
+
+### 3. Run the generator backend
+
+```bash
+cd back-meta-generator/meta_backend
+./mvnw spring-boot:run
+```
+
+Requires a configured PostgreSQL instance (see `application.properties`).
+
+---
+
+## JSON schema
+
+### Root structure
+
+```json
+{
+  "appName": "AppName",
+  "entities": [...],
+  "functionalities": [...]
+}
+```
+
+### Entity
+
+```json
+{
+  "name": "Produto",
+  "attributes": [
+    {
+      "name": "nome",
+      "type": "string",
+      "constraints": ["required", "max_length:100"]
+    },
+    {
+      "name": "status",
+      "type": "enum",
+      "values": ["ATIVO", "INATIVO"]
+    }
+  ],
+  "relations": [
+    {
+      "target": "Categoria",
+      "type": "N:1",
+      "required": true,
+      "cascade": "restrict"
+    }
+  ],
+  "behaviors": ["timestamps", "soft_delete"],
+  "api": {
+    "endpoints": ["crud", "crud_paged", "search", "export_csv"],
+    "auth": "required",
+    "roles": ["admin", "user"]
+  }
+}
+```
+
+**Supported types:** `string`, `number`, `boolean`, `date`, `datetime`, `enum`, `text`
+
+**Behaviors:** `timestamps` (createdAt/updatedAt), `soft_delete` (deletedAt), `versioning` (@Version)
+
+**Endpoints:** `crud`, `crud_paged`, `search`, `filter_by_date_range`, `bulk_create`, `bulk_delete`, `export_csv`, `import_csv`
+
+### Functionality
+
+```json
+{
+  "name": "CalcularDesconto",
+  "input": [
+    { "name": "valorTotal", "type": "number" },
+    { "name": "cupom", "type": "string" }
+  ],
+  "output": [
+    { "name": "valorFinal", "type": "number" },
+    { "name": "percentualDesconto", "type": "number" }
+  ],
+  "entity": "Pedido",
+  "exposeInBackoffice": false
+}
+```
+
+Functionalities automatically generate input/output DTOs, a service interface and a REST controller. The **business logic implementation** is left as a stub for manual completion — or for an AI agent (see status below).
+
+---
+
+## What gets generated
+
+For each application defined in the JSON, the generator produces:
+
+```
+{appName}/
+├── pom.xml
+└── src/main/
+    ├── java/com/metagen/backend/generated/
+    │   ├── entity/           (JPA entities with relationships)
+    │   ├── repository/       (JpaRepository interfaces)
+    │   ├── dto/              (Request/response DTOs)
+    │   │   └── functionality/
+    │   ├── service/          (Business logic + functionality interfaces)
+    │   │   └── functionality/
+    │   ├── controller/       (REST controllers)
+    │   ├── security/         (SecurityConfig, UserDetailsService)
+    │   ├── exception/        (GlobalExceptionHandler)
+    │   └── {App}Application.java
+    ├── resources/
+    │   ├── application.properties  (with auto-generated admin password)
+    │   └── db/migration/V1__Initial_schema.sql
+    └── templates/            (Thymeleaf: list, form, backoffice)
+```
+
+---
+
+## Implementation status
+
+| Feature | Status |
+|---|---|
+| Base project structure | ✅ |
+| JPA entities with relations | ✅ |
+| Repositories | ✅ |
+| Basic DTOs | ✅ |
+| Services and controllers | ✅ |
+| Flyway migrations | ✅ |
+| Spring Security (form-based) | ✅ |
+| Generated initial admin | ✅ |
+| Thymeleaf backoffice | ✅ |
+| Functionalities (interface + DTOs) | ✅ |
+| Bean Validation on DTOs | 🔶 |
+| Pagination on controllers | 🔶 |
+| JWT auth | ❌ |
+| Swagger / OpenAPI | ❌ |
+| Unit/integration tests | ❌ |
+| Docker Compose | ❌ |
+| AI-generated functionality implementations | 📋 Planned |
+
+---
+
+## Stack
+
+**Generator (meta_backend):** Java 17, Spring Boot 3.2.5, PostgreSQL, Flyway, Spring Security, JPA/Hibernate
+
+**Schema editor (metafront):** React 18, Vite, Tailwind CSS 3, Radix UI
+
+**Generated applications:** Java 17, Spring Boot, PostgreSQL, Flyway, Spring Security, Thymeleaf
