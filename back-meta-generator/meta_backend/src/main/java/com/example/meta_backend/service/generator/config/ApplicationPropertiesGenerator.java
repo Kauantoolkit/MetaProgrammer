@@ -12,6 +12,8 @@ public class ApplicationPropertiesGenerator {
         Files.createDirectories(Paths.get(baseDir));
 
         // Use javaClassName for spring.application.name (no hyphens allowed)
+        // admin.password falls back to the generated value when ADMIN_PASSWORD env var is not set.
+        // In production, set the ADMIN_PASSWORD environment variable instead.
         String props = """
             spring.application.name=%s
             server.port=8081
@@ -25,9 +27,10 @@ public class ApplicationPropertiesGenerator {
             spring.flyway.locations=classpath:db/migration
             server.error.include-message=always
             server.error.include-stacktrace=never
-            
+
             # Admin user configuration
-            admin.password=%s
+            # Override with ADMIN_PASSWORD environment variable in production
+            admin.password=${ADMIN_PASSWORD:%s}
             """.formatted(javaClassName, javaClassName.toLowerCase(), adminPassword);
 
         Files.writeString(Paths.get(baseDir + "application.properties"), props);

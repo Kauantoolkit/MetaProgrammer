@@ -15,6 +15,8 @@ public class SecurityGenerator {
         String config = """
             package com.metagen.backend.generated.security;
 
+            import org.slf4j.Logger;
+            import org.slf4j.LoggerFactory;
             import org.springframework.context.annotation.*;
             import org.springframework.security.config.annotation.web.builders.HttpSecurity;
             import org.springframework.security.web.SecurityFilterChain;
@@ -35,6 +37,8 @@ public class SecurityGenerator {
 
             @Configuration
             public class SecurityConfig {
+
+                private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
                 @Autowired
                 private UsersRepository usersRepository;
@@ -72,7 +76,7 @@ public class SecurityGenerator {
                                 .roles(users.getRoles().split(","))
                                 .build();
                         }
-                        throw new UsernameNotFoundException("Users not found: " + username);
+                        throw new UsernameNotFoundException("User not found: " + username);
                     };
                 }
 
@@ -87,7 +91,8 @@ public class SecurityGenerator {
                         @Override
                         public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                 AuthenticationException exception) throws IOException, ServletException {
-                            System.out.println("Login failed: " + exception.getMessage());
+                            log.warn("Authentication failure for user '{}': {}",
+                                     request.getParameter("username"), exception.getMessage());
                             super.onAuthenticationFailure(request, response, exception);
                         }
                     };

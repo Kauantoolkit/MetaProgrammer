@@ -41,8 +41,9 @@ public class ControllerGenerator {
         if (endpoints.contains("crud")) {
             methods.append("""
                     @GetMapping
-                    public List<%s> getAll() {
-                        return service.findAll();
+                    public org.springframework.data.domain.Page<%s> getAll(
+                            @org.springframework.data.web.PageableDefault(size = 20, sort = "id") Pageable pageable) {
+                        return service.findAll(pageable);
                     }
 
                     @GetMapping("/{id}")
@@ -123,6 +124,7 @@ public class ControllerGenerator {
             import org.springframework.web.bind.annotation.*;
             import org.springframework.http.ResponseEntity;
             import org.springframework.web.multipart.MultipartFile;
+            import org.springframework.data.domain.Pageable;
             import java.util.*;
             import com.metagen.backend.generated.entity.%s;
             import com.metagen.backend.generated.service.%sService;

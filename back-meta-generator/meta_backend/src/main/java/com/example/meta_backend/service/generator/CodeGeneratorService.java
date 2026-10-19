@@ -1,5 +1,7 @@
 package com.example.meta_backend.service.generator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.security.SecureRandom;
 
 @Service
 public class CodeGeneratorService {
+
+    private static final Logger log = LoggerFactory.getLogger(CodeGeneratorService.class);
 
     private final BaseStructureGenerator baseStructureGenerator;
     private final FlywayMigrationGenerator flywayMigrationGenerator;
@@ -89,43 +93,48 @@ public class CodeGeneratorService {
     }
 
     public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities, boolean useAi) {
+        String step = "inicialização";
         try {
-            // Generate random admin password
             String adminPassword = generateRandomPassword(16);
-
-            // Derive Java-safe class name from app name
             String javaClassName = AppNameUtils.toClassName(appName);
 
+            step = "estrutura de diretórios";
             generateProjectStructure(appName);
+
+            step = "arquivos base (pom, main class, properties)";
             generateCoreFiles(appName, adminPassword, javaClassName);
 
             String baseDir = buildBaseDir(appName);
 
+            step = "entidade e repositório Users (segurança)";
             generateSecurityUsers(baseDir);
+
+            step = "camadas de domínio (entities, repositories, services, controllers)";
             generateDomainLayers(baseDir, entities, appName);
+
+            step = "migrations Flyway";
             flywayMigrationGenerator.generateFlywayMigration(appName, entities);
+
+            step = "funcionalidades customizadas";
             generateFunctionalities(baseDir, functionalities, entities, useAi);
+
+            step = "infraestrutura (security, exception handler)";
             generateInfrastructure(baseDir);
+
+            step = "templates Thymeleaf";
             generateFrontend(entities, appName);
+
+            step = "controllers de backoffice";
             generateBackoffice(entities, appName);
+
+            step = "inicializador de admin";
             generateAdminInitializer(baseDir);
 
-            // Log the admin password prominently
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("  APPLICATION GENERATED SUCCESSFULLY");
-            System.out.println("=".repeat(60));
-            System.out.println("  Project: " + appName);
-            System.out.println("  Admin Username: admin");
-            System.out.println("  Admin Password: " + adminPassword);
-            System.out.println("=".repeat(60));
-            System.out.println("  IMPORTANT: Save this password securely!");
-            System.out.println("  It will not be displayed again.");
-            System.out.println("  The admin user will be created automatically");
-            System.out.println("  when you run the application for the first time.\n");
-            System.out.println("=".repeat(60) + "\n");
+            log.info("Aplicação '{}' gerada com sucesso. Defina a variável de ambiente ADMIN_PASSWORD antes de fazer deploy em produção.", appName);
 
         } catch (IOException e) {
-            throw new RuntimeException("Erro ao gerar aplicação: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    String.format("Falha ao gerar aplicação '%s' na etapa '%s': %s", appName, step, e.getMessage()), e);
         }
     }
     
@@ -180,7 +189,7 @@ public class CodeGeneratorService {
 
             entityGenerator.generateEntity(baseDir, name, attrs, rels, behaviors, appName);
 
-            repositoryGenerator.generateRepository(baseDir, name);
+            repositoryGenerator.generateRepository(baseDir, name, attrs);
             dtoGenerator.generateDTOs(baseDir, name, attrs);
             serviceGenerator.generateService(baseDir, name, entity);
 

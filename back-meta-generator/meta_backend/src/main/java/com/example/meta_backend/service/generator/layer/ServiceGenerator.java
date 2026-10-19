@@ -30,8 +30,8 @@ public class ServiceGenerator {
         // Conditionally add methods based on endpoints
         if (endpoints.contains("crud")) {
             methods.append("""
-                    public List<%s> findAll() {
-                        return repository.findAll();
+                    public org.springframework.data.domain.Page<%s> findAll(org.springframework.data.domain.Pageable pageable) {
+                        return repository.findAll(pageable);
                     }
 
                     public Optional<%s> findById(Long id) {
@@ -85,8 +85,7 @@ public class ServiceGenerator {
         if (endpoints.contains("export_csv")) {
             methods.append("""
                     public ResponseEntity<byte[]> exportCsv() {
-                        // Implement export logic here
-                        return null; // Placeholder
+                        throw new UnsupportedOperationException("CSV export not implemented yet");
                     }
             """.formatted());
         }

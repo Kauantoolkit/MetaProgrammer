@@ -19,6 +19,8 @@ public class AdminUserInitializerGenerator {
 
             import com.metagen.backend.generated.entity.Users;
             import com.metagen.backend.generated.repository.UsersRepository;
+            import org.slf4j.Logger;
+            import org.slf4j.LoggerFactory;
             import org.springframework.beans.factory.annotation.Autowired;
             import org.springframework.beans.factory.annotation.Value;
             import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -31,6 +33,8 @@ public class AdminUserInitializerGenerator {
 
             @Component
             public class AdminUserInitializer {
+
+                private static final Logger log = LoggerFactory.getLogger(AdminUserInitializer.class);
 
                 @Autowired
                 private UsersRepository usersRepository;
@@ -45,22 +49,17 @@ public class AdminUserInitializerGenerator {
                 @Transactional
                 public void createAdminUser() {
                     Optional<Users> existingAdmin = usersRepository.findByUsername("admin");
-                    
+
                     if (existingAdmin.isEmpty()) {
                         Users admin = new Users();
                         admin.setUsername("admin");
                         admin.setPassword(passwordEncoder.encode(adminPassword));
                         admin.setRoles("ADMIN");
-                        
+
                         usersRepository.save(admin);
-                        
-                        System.out.println("========================================");
-                        System.out.println("Admin user created successfully!");
-                        System.out.println("Username: admin");
-                        System.out.println("Password: " + adminPassword);
-                        System.out.println("========================================");
+                        log.info("Admin user created. Configure the password via the ADMIN_PASSWORD environment variable.");
                     } else {
-                        System.out.println("Admin user already exists, skipping creation.");
+                        log.debug("Admin user already exists, skipping creation.");
                     }
                 }
             }
