@@ -1,36 +1,37 @@
 package com.example.meta_backend.service.generator.base;
 
-import java.io.IOException;
-import java.nio.file.*;
-
+import com.example.meta_backend.service.generator.ProjectWriter;
+import com.example.meta_backend.service.generator.model.AppSchema;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MainClassGenerator {
-    public void generateMainClass(String projectName) throws IOException {
-        String baseDir = projectName + "/src/main/java/com/metagen/backend/generated/";
-    String className = AppNameUtils.toClassName(projectName) + "Application";
 
-    String content = """
-        package com.metagen.backend.generated;
+    public void generate(AppSchema schema, ProjectWriter out) {
+        String className = schema.className() + "Application";
+        String content = """
+            package @PKG@;
 
-        import org.springframework.boot.SpringApplication;
-        import org.springframework.boot.autoconfigure.SpringBootApplication;
+            import org.springframework.boot.SpringApplication;
+            import org.springframework.boot.autoconfigure.SpringBootApplication;
+            import org.springframework.boot.autoconfigure.domain.EntityScan;
+            import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+            import org.springframework.scheduling.annotation.EnableAsync;
 
-        @SpringBootApplication
-        public class %s {
-            public static void main(String[] args) {
-                SpringApplication.run(%s.class, args);
+            // As autoconfigurações do Basilisk declaram @EntityScan/@EnableJpaRepositories nos pacotes delas, o que
+            // desliga a varredura padrão do app: os pacotes do sistema precisam ser ditos aqui.
+            // @EnableAsync: o basilisk-audit grava o log de auditoria em segundo plano.
+            @SpringBootApplication
+            @EntityScan(basePackages = "@PKG@.entity")
+            @EnableJpaRepositories(basePackages = "@PKG@.repository")
+            @EnableAsync
+            public class @CLASS@ {
+
+                public static void main(String[] args) {
+                    SpringApplication.run(@CLASS@.class, args);
+                }
             }
-        }
-        """.formatted(className, className);
-
-    // Cria diretório base
-    Files.createDirectories(Paths.get(baseDir));
-    // Salva arquivo com o nome correto da classe pública
-    Files.writeString(Paths.get(baseDir + className + ".java"), content);
-}
-
-
-// Using AppNameUtils.toClassName() instead - handles both hyphens and underscores
+            """.replace("@PKG@", ProjectWriter.PACKAGE).replace("@CLASS@", className);
+        out.java("", className, content);
+    }
 }

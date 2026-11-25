@@ -1,100 +1,61 @@
 package com.example.meta_backend.service.generator.security;
 
-import java.io.IOException;
-import java.nio.file.*;
-
+import com.example.meta_backend.service.generator.ProjectWriter;
 import org.springframework.stereotype.Component;
 
+/**
+ * SecurityConfig do estudio-app: JWT do basilisk-security + TenantFilter, tudo autenticado menos /auth. Antes o
+ * gerado tinha login por formulário e `anyRequest().permitAll()`, ou seja, a API inteira aberta.
+ * A checagem fina é o @RequiresPermission de cada endpoint (ControllerGenerator).
+ */
 @Component
 public class SecurityGenerator {
 
-    public void generateSecurityClasses(String baseDir) throws IOException {
-        Path secPath = Paths.get(baseDir + "security");
-        Files.createDirectories(secPath);
-
+    public void generate(ProjectWriter out) {
         String config = """
-            package com.metagen.backend.generated.security;
+            package @PKG@.config;
 
-            import org.springframework.context.annotation.*;
+            import com.basilisk.security.jwt.JwtAuthFilter;
+            import com.basilisk.tenant.filter.TenantFilter;
+            import lombok.RequiredArgsConstructor;
+            import org.springframework.context.annotation.Bean;
+            import org.springframework.context.annotation.Configuration;
+            import org.springframework.http.HttpStatus;
             import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+            import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+            import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+            import org.springframework.security.config.http.SessionCreationPolicy;
             import org.springframework.security.web.SecurityFilterChain;
-            import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-            import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-            import org.springframework.security.core.AuthenticationException;
-            import org.springframework.security.core.userdetails.*;
-            import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-            import org.springframework.security.crypto.password.PasswordEncoder;
-            import org.springframework.beans.factory.annotation.Autowired;
-            import com.metagen.backend.generated.repository.UsersRepository;
-            import com.metagen.backend.generated.entity.Users;
-            import jakarta.servlet.ServletException;
-            import jakarta.servlet.http.HttpServletRequest;
-            import jakarta.servlet.http.HttpServletResponse;
-            import java.io.IOException;
-            import java.util.Optional;
+            import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+            import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
             @Configuration
+            @EnableWebSecurity
+            @RequiredArgsConstructor
             public class SecurityConfig {
 
-                @Autowired
-                private UsersRepository usersRepository;
+                private final JwtAuthFilter jwtAuthFilter;
+                private final TenantFilter tenantFilter;
 
                 @Bean
                 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                    http.csrf(csrf -> csrf.disable())
+                    http
+                        .csrf(AbstractHttpConfigurer::disable)
+                        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                         .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/login").permitAll()
-                            .requestMatchers("/backoffice/**").authenticated()
-                            .anyRequest().permitAll()
+                            .requestMatchers("/api/v1/auth/**").permitAll()
+                            .anyRequest().authenticated()
                         )
-                        .formLogin(form -> form
-                            .loginPage("/login")
-                            .defaultSuccessUrl("/backoffice", true)
-                            .failureHandler(authenticationFailureHandler())
-                            .permitAll()
-                        )
-                        .logout(logout -> logout
-                            .logoutSuccessUrl("/")
-                            .permitAll()
-                        );
+                        // Sem login (token ausente, vencido ou adulterado) responde 401, não o 403 padrão: o front
+                        // só derruba a sessão e volta ao login no 401
+                        .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                        .addFilterAfter(tenantFilter, JwtAuthFilter.class);
+
                     return http.build();
                 }
-
-                @Bean
-                public UserDetailsService userDetailsService() {
-                    return username -> {
-                        Optional<Users> usersOpt = usersRepository.findByUsername(username);
-                        if (usersOpt.isPresent()) {
-                            Users users = usersOpt.get();
-                            return org.springframework.security.core.userdetails.User.builder()
-                                .username(users.getUsername())
-                                .password(users.getPassword())
-                                .roles(users.getRoles().split(","))
-                                .build();
-                        }
-                        throw new UsernameNotFoundException("Users not found: " + username);
-                    };
-                }
-
-                @Bean
-                public PasswordEncoder passwordEncoder() {
-                    return new BCryptPasswordEncoder();
-                }
-
-                @Bean
-                public AuthenticationFailureHandler authenticationFailureHandler() {
-                    return new SimpleUrlAuthenticationFailureHandler() {
-                        @Override
-                        public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                AuthenticationException exception) throws IOException, ServletException {
-                            System.out.println("Login failed: " + exception.getMessage());
-                            super.onAuthenticationFailure(request, response, exception);
-                        }
-                    };
-                }
             }
-            """;
-
-        Files.writeString(secPath.resolve("SecurityConfig.java"), config);
+            """.replace("@PKG@", ProjectWriter.PACKAGE);
+        out.java("config", "SecurityConfig", config);
     }
 }

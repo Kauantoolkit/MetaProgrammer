@@ -1,226 +1,90 @@
 package com.example.meta_backend.service.generator;
 
+import com.example.meta_backend.service.generator.base.FlywayMigrationGenerator;
+import com.example.meta_backend.service.generator.base.GitignoreGenerator;
+import com.example.meta_backend.service.generator.base.MainClassGenerator;
+import com.example.meta_backend.service.generator.base.PomGenerator;
+import com.example.meta_backend.service.generator.config.ApplicationPropertiesGenerator;
+import com.example.meta_backend.service.generator.entity.DtoGenerator;
+import com.example.meta_backend.service.generator.entity.EntityGenerator;
+import com.example.meta_backend.service.generator.entity.RepositoryGenerator;
+import com.example.meta_backend.service.generator.functionality.ClaudeTodoGenerator;
+import com.example.meta_backend.service.generator.functionality.FunctionalityGenerator;
+import com.example.meta_backend.service.generator.layer.ControllerGenerator;
+import com.example.meta_backend.service.generator.layer.ServiceGenerator;
+import com.example.meta_backend.service.generator.model.AppSchema;
+import com.example.meta_backend.service.generator.model.AppSchema.EntitySpec;
+import com.example.meta_backend.service.generator.model.AppSchema.FunctionalitySpec;
+import com.example.meta_backend.service.generator.model.Names;
+import com.example.meta_backend.service.generator.model.SchemaParser;
+import com.example.meta_backend.service.generator.security.SecurityGenerator;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
-import com.example.meta_backend.service.generator.base.*;
-import com.example.meta_backend.service.generator.entity.*;
-import com.example.meta_backend.service.generator.layer.*;
-import com.example.meta_backend.service.generator.config.*;
-import com.example.meta_backend.service.generator.security.*;
-import com.example.meta_backend.service.generator.functionality.*;
-
-import java.security.SecureRandom;
-
+/**
+ * Gera um sistema Spring Boot sobre o Basilisk a partir do payload da tela. Login, usuários, tenants e permissões
+ * vêm das libs; daqui sai só o domínio.
+ */
 @Service
+@RequiredArgsConstructor
 public class CodeGeneratorService {
 
-    private final BaseStructureGenerator baseStructureGenerator;
-    private final FlywayMigrationGenerator flywayMigrationGenerator;
+    private final SchemaParser schemaParser;
     private final PomGenerator pomGenerator;
     private final MainClassGenerator mainClassGenerator;
     private final GitignoreGenerator gitignoreGenerator;
     private final ApplicationPropertiesGenerator appPropsGenerator;
-
+    private final SecurityGenerator securityGenerator;
+    private final FlywayMigrationGenerator flywayMigrationGenerator;
     private final EntityGenerator entityGenerator;
     private final RepositoryGenerator repositoryGenerator;
     private final DtoGenerator dtoGenerator;
     private final ServiceGenerator serviceGenerator;
     private final ControllerGenerator controllerGenerator;
+    private final FunctionalityGenerator functionalityGenerator;
+    private final ClaudeTodoGenerator claudeTodoGenerator;
 
-    private final SecurityGenerator securityGenerator;
-    private final GlobalExceptionHandlerGenerator exceptionHandlerGenerator;
-    private final ThymeleafFrontGenerator thymeleafGenerator;
-    private final BackofficeControllerGenerator backofficeControllerGenerator;
-    private final AdminUserInitializerGenerator adminUserInitializerGenerator;
+    @Value("${generator.output-dir:generated-apps}")
+    private String outputDir;
 
-    private final FunctionalityDtoGenerator functionalityDtoGenerator;
-    private final FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator;
-    private final FunctionalityServiceImplGenerator functionalityServiceImplGenerator;
-    private final FunctionalityControllerGenerator functionalityControllerGenerator;
+    public Result generateApplication(Map<String, Object> payload) {
+        AppSchema schema = schemaParser.parse(payload);
 
-    public CodeGeneratorService(
-            BaseStructureGenerator baseStructureGenerator,
-            FlywayMigrationGenerator flywayMigrationGenerator,
-            PomGenerator pomGenerator,
-            MainClassGenerator mainClassGenerator,
-            GitignoreGenerator gitignoreGenerator,
-            ApplicationPropertiesGenerator appPropsGenerator,
-            EntityGenerator entityGenerator,
-            RepositoryGenerator repositoryGenerator,
-            DtoGenerator dtoGenerator,
-            ServiceGenerator serviceGenerator,
-            ControllerGenerator controllerGenerator,
-            SecurityGenerator securityGenerator,
-            GlobalExceptionHandlerGenerator exceptionHandlerGenerator,
-            ThymeleafFrontGenerator thymeleafGenerator,
-            BackofficeControllerGenerator backofficeControllerGenerator,
-            AdminUserInitializerGenerator adminUserInitializerGenerator,
-            FunctionalityDtoGenerator functionalityDtoGenerator,
-            FunctionalityServiceInterfaceGenerator functionalityServiceInterfaceGenerator,
-            FunctionalityServiceImplGenerator functionalityServiceImplGenerator,
-            FunctionalityControllerGenerator functionalityControllerGenerator
-    ) {
-
-        this.baseStructureGenerator = baseStructureGenerator;
-        this.flywayMigrationGenerator = flywayMigrationGenerator;
-        this.pomGenerator = pomGenerator;
-        this.mainClassGenerator = mainClassGenerator;
-        this.gitignoreGenerator = gitignoreGenerator;
-        this.appPropsGenerator = appPropsGenerator;
-        this.entityGenerator = entityGenerator;
-        this.repositoryGenerator = repositoryGenerator;
-        this.dtoGenerator = dtoGenerator;
-        this.serviceGenerator = serviceGenerator;
-        this.controllerGenerator = controllerGenerator;
-        this.securityGenerator = securityGenerator;
-        this.exceptionHandlerGenerator = exceptionHandlerGenerator;
-        this.thymeleafGenerator = thymeleafGenerator;
-        this.backofficeControllerGenerator = backofficeControllerGenerator;
-        this.adminUserInitializerGenerator = adminUserInitializerGenerator;
-        this.functionalityDtoGenerator = functionalityDtoGenerator;
-
-        this.functionalityServiceInterfaceGenerator = functionalityServiceInterfaceGenerator;
-        this.functionalityServiceImplGenerator = functionalityServiceImplGenerator;
-        this.functionalityControllerGenerator = functionalityControllerGenerator;
-    }
-
-    public void generateApplication(String appName, List<Map<String, Object>> entities, List<Map<String, Object>> functionalities, boolean useAi) {
-        try {
-            // Generate random admin password
-            String adminPassword = generateRandomPassword(16);
-
-            // Derive Java-safe class name from app name
-            String javaClassName = AppNameUtils.toClassName(appName);
-
-            generateProjectStructure(appName);
-            generateCoreFiles(appName, adminPassword, javaClassName);
-
-            String baseDir = buildBaseDir(appName);
-
-            generateSecurityUsers(baseDir);
-            generateDomainLayers(baseDir, entities, appName);
-            flywayMigrationGenerator.generateFlywayMigration(appName, entities);
-            generateFunctionalities(baseDir, functionalities, entities, useAi);
-            generateInfrastructure(baseDir);
-            generateFrontend(entities, appName);
-            generateBackoffice(entities, appName);
-            generateAdminInitializer(baseDir);
-
-            // Log the admin password prominently
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("  APPLICATION GENERATED SUCCESSFULLY");
-            System.out.println("=".repeat(60));
-            System.out.println("  Project: " + appName);
-            System.out.println("  Admin Username: admin");
-            System.out.println("  Admin Password: " + adminPassword);
-            System.out.println("=".repeat(60));
-            System.out.println("  IMPORTANT: Save this password securely!");
-            System.out.println("  It will not be displayed again.");
-            System.out.println("  The admin user will be created automatically");
-            System.out.println("  when you run the application for the first time.\n");
-            System.out.println("=".repeat(60) + "\n");
-
-        } catch (IOException e) {
-            throw new RuntimeException("Erro ao gerar aplicação: " + e.getMessage(), e);
+        Path root = Path.of(outputDir).toAbsolutePath().resolve(Names.kebab(schema.className()));
+        // Gerar por cima apagaria o que já foi implementado nos TODO(claude); pasta existente é recusada
+        if (Files.exists(root)) {
+            throw new IllegalStateException("A pasta " + root + " já existe. Apague ou troque o appName.");
         }
-    }
-    
-    private String generateRandomPassword(int length) {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-        SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(chars.charAt(random.nextInt(chars.length())));
+        ProjectWriter out = new ProjectWriter(root);
+
+        pomGenerator.generate(schema, out);
+        mainClassGenerator.generate(schema, out);
+        gitignoreGenerator.generate(out);
+        appPropsGenerator.generate(schema, out);
+        securityGenerator.generate(out);
+        flywayMigrationGenerator.generate(schema, out);
+
+        for (EntitySpec e : schema.entities()) {
+            entityGenerator.generate(e, out);
+            repositoryGenerator.generate(e, out);
+            dtoGenerator.generate(e, out);
+            serviceGenerator.generate(e, out);
+            controllerGenerator.generate(e, out);
         }
-        return sb.toString();
-    }
-
-
-    private void generateProjectStructure(String appName) throws IOException {
-        baseStructureGenerator.createBaseStructure(appName);
-    }
-
-    private void generateCoreFiles(String appName, String adminPassword, String javaClassName) throws IOException {
-        pomGenerator.generatePom(appName);
-        mainClassGenerator.generateMainClass(appName);
-        gitignoreGenerator.generateGitignore(appName);
-        appPropsGenerator.generateApplicationProperties(appName, adminPassword, javaClassName);
-    }
-
-
-    private String buildBaseDir(String appName) {
-        return appName + "/src/main/java/com/metagen/backend/generated/";
-    }
-
-    private void generateSecurityUsers(String baseDir) throws IOException {
-        entityGenerator.generateUsersEntity(baseDir);
-        repositoryGenerator.generateUsersRepository(baseDir);
-    }
-
-    private void generateDomainLayers(String baseDir, List<Map<String, Object>> entities, String appName) throws IOException {
-        for (Map<String, Object> entity : entities) {
-            String name = (String) entity.get("name");
-            
-            //skippa pra n sobrescrever
-            if ("Users".equalsIgnoreCase(name)) {
-                continue;
-            }
-
-            List<Map<String, Object>> attrs =
-                    (List<Map<String, Object>>) entity.getOrDefault("attributes", List.of());
-
-            List<Map<String, Object>> rels =
-                    (List<Map<String, Object>>) entity.getOrDefault("relations", List.of());
-
-            List<String> behaviors = (List<String>) entity.getOrDefault("behaviors", List.of());
-
-            entityGenerator.generateEntity(baseDir, name, attrs, rels, behaviors, appName);
-
-            repositoryGenerator.generateRepository(baseDir, name);
-            dtoGenerator.generateDTOs(baseDir, name, attrs);
-            serviceGenerator.generateService(baseDir, name, entity);
-
-            generateControllerIfNeeded(baseDir, name, attrs, entity);
+        for (FunctionalitySpec f : schema.functionalities()) {
+            functionalityGenerator.generate(schema, f, out);
         }
+        claudeTodoGenerator.generate(schema, out);
+
+        return new Result(root.toString(), schema.entities().size(), schema.functionalities().size(),
+                schema.notes().size());
     }
 
-    private void generateControllerIfNeeded(String baseDir, String name, List<Map<String, Object>> attrs, Map<String, Object> entity) throws IOException {
-        Map<String, Object> api = (Map<String, Object>) entity.getOrDefault("api", Map.of());
-        List<String> endpoints = (List<String>) api.getOrDefault("endpoints", List.of());
-
-        if (!endpoints.isEmpty()) {
-            controllerGenerator.generateController(baseDir, name, attrs, entity);
-        }
-    }
-
-    private void generateInfrastructure(String baseDir) throws IOException {
-        securityGenerator.generateSecurityClasses(baseDir);
-        exceptionHandlerGenerator.generateGlobalExceptionHandler(baseDir);
-    }
-    
-    private void generateAdminInitializer(String baseDir) throws IOException {
-        adminUserInitializerGenerator.generateAdminUserInitializer(baseDir);
-    }
-
-
-    private void generateFrontend(List<Map<String, Object>> entities, String appName) throws IOException {
-        thymeleafGenerator.generateTemplates(entities, appName);
-    }
-
-    private void generateBackoffice(List<Map<String, Object>> entities, String appName) throws IOException {
-        backofficeControllerGenerator.generateBackofficeController(entities, appName);
-    }
-
-    private void generateFunctionalities(String baseDir, List<Map<String, Object>> functionalities, List<Map<String, Object>> entities, boolean useAi) throws IOException {
-        if (!functionalities.isEmpty()) {
-            functionalityDtoGenerator.generateFunctionalityDTOs(baseDir, functionalities);
-            functionalityServiceInterfaceGenerator.generateFunctionalityServiceInterfaces(baseDir, functionalities);
-            functionalityServiceImplGenerator.generateFunctionalityServiceImpls(baseDir, functionalities, entities, useAi);
-            functionalityControllerGenerator.generateFunctionalityControllers(baseDir, functionalities);
-        }
+    public record Result(String path, int entities, int functionalities, int pendingNotes) {
     }
 }
