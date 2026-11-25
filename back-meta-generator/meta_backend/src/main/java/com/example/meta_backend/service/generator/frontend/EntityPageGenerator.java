@@ -273,7 +273,6 @@ public class EntityPageGenerator {
         }
         for (RefSpec r : e.refs()) toInput.append("      ").append(r.name()).append(": v.").append(r.name()).append(" || null,\n");
         for (ManyToManySpec m : e.manyToMany()) toInput.append("      ").append(m.name()).append(": v.").append(m.name()).append(",\n");
-        if (e.has("versioning")) toInput.append("      // versão do registro aberto: o backend recusa se alguém salvou antes\n");
         toInput.append("    };\n");
 
         StringBuilder fill = new StringBuilder();

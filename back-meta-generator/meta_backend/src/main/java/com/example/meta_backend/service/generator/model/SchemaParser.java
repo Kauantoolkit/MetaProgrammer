@@ -85,7 +85,12 @@ public class SchemaParser {
 
         if (behaviors.contains("state_machine")) {
             notes.add("`" + className + "` pediu máquina de estados (`state_machine`): definir os estados e as "
-                    + "transições permitidas e travar no `" + className + "Service` (hoje qualquer status é aceito).");
+                    + "transições permitidas e travar no `" + className + "Service` (hoje não há trava de transição).");
+        }
+        if (behaviors.contains("versioning")) {
+            notes.add("`" + className + "` tem `versioning`: a coluna `version` existe e sobe a cada gravação, mas o "
+                    + "Request não leva a versão, então duas pessoas editando ao mesmo tempo não são barradas (a "
+                    + "última gravação vence). Se precisar barrar, receber `version` no Request e comparar no service.");
         }
         if (behaviors.contains("audit_log")) {
             notes.add("`" + className + "` pediu `audit_log`: o basilisk-audit já grava toda escrita feita pela API "
