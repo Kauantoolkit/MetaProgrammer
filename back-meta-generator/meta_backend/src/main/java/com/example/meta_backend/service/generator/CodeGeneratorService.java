@@ -9,6 +9,9 @@ import com.example.meta_backend.service.generator.entity.DtoGenerator;
 import com.example.meta_backend.service.generator.entity.EntityGenerator;
 import com.example.meta_backend.service.generator.entity.RepositoryGenerator;
 import com.example.meta_backend.service.generator.functionality.ClaudeTodoGenerator;
+import com.example.meta_backend.service.generator.frontend.EntityPageGenerator;
+import com.example.meta_backend.service.generator.frontend.FrontendScaffoldGenerator;
+import com.example.meta_backend.service.generator.frontend.ShellConfigGenerator;
 import com.example.meta_backend.service.generator.functionality.FunctionalityGenerator;
 import com.example.meta_backend.service.generator.layer.ControllerGenerator;
 import com.example.meta_backend.service.generator.layer.ServiceGenerator;
@@ -48,6 +51,9 @@ public class CodeGeneratorService {
     private final ControllerGenerator controllerGenerator;
     private final FunctionalityGenerator functionalityGenerator;
     private final ClaudeTodoGenerator claudeTodoGenerator;
+    private final FrontendScaffoldGenerator frontendScaffoldGenerator;
+    private final ShellConfigGenerator shellConfigGenerator;
+    private final EntityPageGenerator entityPageGenerator;
 
     @Value("${generator.output-dir:generated-apps}")
     private String outputDir;
@@ -78,6 +84,11 @@ public class CodeGeneratorService {
         }
         for (FunctionalitySpec f : schema.functionalities()) {
             functionalityGenerator.generate(schema, f, out);
+        }
+        frontendScaffoldGenerator.generate(schema, out);
+        shellConfigGenerator.generate(schema, out);
+        for (EntitySpec e : schema.entities()) {
+            entityPageGenerator.generate(schema, e, out);
         }
         claudeTodoGenerator.generate(schema, out);
 

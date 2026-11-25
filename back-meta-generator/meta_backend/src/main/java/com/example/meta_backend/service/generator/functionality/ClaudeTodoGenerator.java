@@ -54,6 +54,39 @@ public class ClaudeTodoGenerator {
             for (String note : schema.notes()) md.append("- [ ] ").append(note).append('\n');
         }
         out.write("CLAUDE-TODO.md", md.toString());
+        out.write("README.md", readme(schema));
+    }
+
+    private String readme(AppSchema schema) {
+        String db = com.example.meta_backend.service.generator.model.Names.snake(schema.className());
+        return """
+            # @NAME@
+
+            Gerado pelo MetaProgrammer sobre o Basilisk (Spring Boot 3.3 + Angular 22). O que falta implementar está
+            em `CLAUDE-TODO.md`.
+
+            ## Rodar
+
+            1. Banco Postgres vazio chamado `@DB@` (ou outro, apontado por `DB_URL`).
+            2. Backend (porta 8081):
+               ```
+               cd backend
+               mvn spring-boot:run
+               ```
+               Variáveis: `DB_URL`, `DB_USER`, `DB_PASSWORD` (padrão postgres/postgres), `JWT_SECRET`, `SERVER_PORT`.
+               As libs Basilisk vêm do GitHub Packages ou do `~/.m2` (versão em `basilisk.version` no pom).
+            3. Frontend (porta 4200, com proxy de `/api` para a 8081):
+               ```
+               cd frontend
+               npm install
+               npm start
+               ```
+            4. Abrir http://localhost:4200, **Criar conta**: cria a empresa e o usuário dono (OWNER), que pode tudo.
+               Outros usuários entram por `POST /api/v1/users/invite`; papel MEMBER só acessa o que uma role
+               própria liberar (`<recurso>:read` / `<recurso>:write`).
+
+            As funcionalidades de negócio (CLAUDE-TODO) ainda não têm tela: são chamadas pelo endpoint.
+            """.replace("@NAME@", schema.appName()).replace("@DB@", db);
     }
 
     private String params(List<ParamSpec> params) {

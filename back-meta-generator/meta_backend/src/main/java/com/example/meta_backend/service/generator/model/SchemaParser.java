@@ -91,6 +91,16 @@ public class SchemaParser {
             notes.add("`" + className + "` pediu `audit_log`: o basilisk-audit já grava toda escrita feita pela API "
                     + "(quem, quando, rota). Se precisar do antes/depois dos campos, implementar no service.");
         }
+        boolean hasDate = fields.stream().anyMatch(f -> f.type().isTemporal()) || behaviors.contains("timestamps");
+        if (endpoints.contains("filter_by_date_range") && !hasDate) {
+            notes.add("`" + className + "` pediu filtro por período (`filter_by_date_range`), mas não tem campo de "
+                    + "data nem `timestamps`: o endpoint não foi gerado. Dizer qual data filtrar (ou ligar "
+                    + "`timestamps` na tela e gerar de novo).");
+        }
+        if (endpoints.contains("search") && fields.stream().noneMatch(f -> f.type().isText())) {
+            notes.add("`" + className + "` pediu busca (`search`), mas não tem campo de texto: o endpoint não foi "
+                    + "gerado. Dizer por quais campos buscar.");
+        }
         String auth = str(api.get("auth"));
         if (auth.equals("none") || auth.equals("api_key")) {
             notes.add("`" + className + "` foi marcada como `" + auth + "` na tela, mas foi gerada exigindo login: "
